@@ -30,17 +30,31 @@ class ECDSASignature(SignatureBase):
         public_key = private_key.public_key()
         return private_key, public_key
 
-    def sign(self, data: Union[bytes, str], private_key, **kwargs) -> bytes:
+    def sign(
+        self,
+        data: Union[bytes, str],
+        private_key,
+        password: Optional[bytes] = None,
+        **kwargs
+    ) -> bytes:
         """使用 ECDSA 私钥对数据进行签名
 
         Args:
             data: 要签名的数据
-            private_key: ECDSA 私钥
+            private_key: ECDSA 私钥或私钥字节数据
+            password: 私钥密码（如果私钥是字节数据且已加密）
 
         Returns:
             bytes: 签名结果
         """
         data = self._ensure_bytes(data)
+
+        # 如果 private_key 是字节数据，则加载它
+        if isinstance(private_key, bytes):
+            private_key = serialization.load_pem_private_key(
+                private_key, password=password
+            )
+
         signature = private_key.sign(data, ec.ECDSA(self.hash_algorithm))
         return signature
 
@@ -52,12 +66,17 @@ class ECDSASignature(SignatureBase):
         Args:
             data: 原始数据
             signature: 签名
-            public_key: ECDSA 公钥
+            public_key: ECDSA 公钥或公钥字节数据
 
         Returns:
             bool: 验证是否通过
         """
         data = self._ensure_bytes(data)
+
+        # 如果 public_key 是字节数据，则加载它
+        if isinstance(public_key, bytes):
+            public_key = serialization.load_pem_public_key(public_key)
+
         try:
             public_key.verify(signature, data, ec.ECDSA(self.hash_algorithm))
             return True
@@ -147,3 +166,16 @@ class ECDSASignature(SignatureBase):
 
         public_key = serialization.load_pem_public_key(public_bytes)
         return public_key
+
+    def _ensure_bytes(self, data: Union[bytes, str]) -> bytes:
+        """确保数据为字节类型
+
+        Args:
+            data: 输入数据，可以是字符串或字节
+
+        Returns:
+            bytes: 字节类型的数据
+        """
+        if isinstance(data, str):
+            return data.encode("utf-8")
+        return data

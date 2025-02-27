@@ -33,7 +33,7 @@ class HashFactory:
         Raises:
             ValueError: 如果算法不存在
         """
-        algorithm = algorithm.lower()
+        #algorithm = algorithm.lower()
         if algorithm not in HASH_ALGORITHMS:
             raise ValueError(
                 f"不支持的哈希算法: {algorithm}. 支持的算法: {', '.join(ALL_ALGORITHMS)}"
@@ -79,7 +79,7 @@ class HashFactory:
             TypeError: 如果参数类型不正确
             RuntimeError: 如果创建实例失败
         """
-        algorithm = algorithm.lower()
+        #algorithm = algorithm.lower()
         if algorithm not in HASH_ALGORITHMS:
             raise ValueError(
                 f"不支持的哈希算法: {algorithm}. 支持的算法: {', '.join(ALL_ALGORITHMS)}"
@@ -124,7 +124,7 @@ class HashFactory:
         Raises:
             ValueError: 如果算法不存在
         """
-        algorithm = algorithm.lower()
+        #algorithm = algorithm.lower()
         if algorithm not in HASH_ALGORITHMS:
             raise ValueError(f"不支持的哈希算法: {algorithm}")
 
@@ -144,7 +144,7 @@ class HashFactory:
         Raises:
             ValueError: 如果算法不存在
         """
-        algorithm = algorithm.lower()
+        #algorithm = algorithm.lower()
         if algorithm not in HASH_ALGORITHMS:
             raise ValueError(f"不支持的哈希算法: {algorithm}")
 

@@ -122,7 +122,7 @@ def sm3_hash(
 
 
 # 兼容性函数，与其他哈希算法保持一致的接口
-def sm3(
+def SM3(
     data: Optional[Union[str, bytes, bytearray]] = None, encoding: str = "utf-8"
 ) -> Union[bytes, SM3Hash]:
     """

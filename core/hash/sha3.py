@@ -194,9 +194,9 @@ def _create_shake_function(cls):
 
 
 # 导出函数
-sha3_224 = _create_sha3_function(SHA3_224Hash)
-sha3_256 = _create_sha3_function(SHA3_256Hash)
-sha3_384 = _create_sha3_function(SHA3_384Hash)
-sha3_512 = _create_sha3_function(SHA3_512Hash)
-shake128 = _create_shake_function(SHAKE128Hash)
-shake256 = _create_shake_function(SHAKE256Hash)
+SHA3_224 = _create_sha3_function(SHA3_224Hash)
+SHA3_256 = _create_sha3_function(SHA3_256Hash)
+SHA3_384 = _create_sha3_function(SHA3_384Hash)
+SHA3_512 = _create_sha3_function(SHA3_512Hash)
+SHAKE128 = _create_shake_function(SHAKE128Hash)
+SHAKE256 = _create_shake_function(SHAKE256Hash)

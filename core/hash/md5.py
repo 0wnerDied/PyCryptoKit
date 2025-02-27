@@ -38,7 +38,7 @@ class MD5Hash(HashBase):
         self._md5 = hashlib.md5()
 
 
-def md5(
+def MD5(
     data: Optional[Union[str, bytes, bytearray]] = None, encoding: str = "utf-8"
 ) -> Union[bytes, MD5Hash]:
     """

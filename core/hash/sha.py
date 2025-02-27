@@ -131,8 +131,8 @@ def _create_sha_function(cls: Type[HashBase]):
 
 
 # 导出函数
-sha1 = _create_sha_function(SHA1Hash)
-sha224 = _create_sha_function(SHA224Hash)
-sha256 = _create_sha_function(SHA256Hash)
-sha384 = _create_sha_function(SHA384Hash)
-sha512 = _create_sha_function(SHA512Hash)
+SHA1 = _create_sha_function(SHA1Hash)
+SHA224 = _create_sha_function(SHA224Hash)
+SHA256 = _create_sha_function(SHA256Hash)
+SHA384 = _create_sha_function(SHA384Hash)
+SHA512 = _create_sha_function(SHA512Hash)

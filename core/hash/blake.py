@@ -231,7 +231,7 @@ class BLAKE2sHash(BLAKEHash):
 
 
 # 导出函数
-def blake2b(
+def BLAKE2b(
     data: Optional[Union[str, bytes, bytearray]] = None,
     digest_size: int = 64,
     key: bytes = b"",
@@ -264,7 +264,7 @@ def blake2b(
     return hash_obj
 
 
-def blake2s(
+def BLAKE2s(
     data: Optional[Union[str, bytes, bytearray]] = None,
     digest_size: int = 32,
     key: bytes = b"",

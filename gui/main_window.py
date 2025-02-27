@@ -39,9 +39,9 @@ class MainWindow(QMainWindow):
         #self.signature_view = SignatureView()
         
         self.tabs.addTab(self.hash_view, "哈希计算")
-        self.tabs.addTab(self.symmetric_view, "对称加密")
-        self.tabs.addTab(self.asymmetric_view, "非对称加密")
-        self.tabs.addTab(self.signature_view, "数字签名")
+        #self.tabs.addTab(self.symmetric_view, "对称加密")
+        #self.tabs.addTab(self.asymmetric_view, "非对称加密")
+        #self.tabs.addTab(self.signature_view, "数字签名")
         
         # 状态栏
         self.statusBar().showMessage("就绪")

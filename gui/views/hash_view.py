@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QRadioButton,
 )
-from PyCryptoKit.core import create_hash, list_hash_algorithms
+from core import create_hash, list_hash_algorithms
 
 
 class HashView(QWidget):

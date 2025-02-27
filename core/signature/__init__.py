@@ -79,6 +79,28 @@ def sign(
     # 执行签名
     return signature_algo.sign(data=data, private_key=key, password=password, **kwargs)
 
+def verify_signature(
+    data: bytes, signature: bytes, key: bytes, algorithm: str, **kwargs
+) -> bool:
+    """
+    使用指定算法和公钥验证数据签名
+
+    Args:
+        data: 原始数据
+        signature: 签名数据
+        key: 公钥数据
+        algorithm: 签名算法名称
+        **kwargs: 其他算法特定参数
+
+    Returns:
+        bool: 验证结果, True表示签名有效, False表示签名无效
+    """
+    # 创建签名算法实例
+    signature_algo = create_signature(algorithm=algorithm, **kwargs)
+
+    # 执行验证
+    return signature_algo.verify(data=data, signature=signature, public_key=key, **kwargs)
+
 
 def list_algorithms() -> List[str]:
     """

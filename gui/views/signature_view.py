@@ -21,7 +21,7 @@ import binascii
 from typing import Optional
 
 from core.signature import (
-    create_signature,
+    sign,
     list_algorithms as list_signature_algorithms,
     get_algorithm_info as get_signature_algorithm_info,
     ALL_ALGORITHMS as ALL_SIGNATURE_ALGORITHMS,
@@ -252,15 +252,25 @@ class SignatureView(QWidget):
 
         # 显示格式选项
         format_layout = QHBoxLayout()
-
-        self.base64_check = QCheckBox("Base64 格式")
-        self.base64_check.setChecked(True)
-        self.base64_check.toggled.connect(self.update_result_format)
-        format_layout.addWidget(self.base64_check)
-
-        self.hex_check = QCheckBox("十六进制格式")
-        self.hex_check.toggled.connect(self.update_result_format)
-        format_layout.addWidget(self.hex_check)
+        
+        # 创建互斥的格式选择
+        self.format_group = QGroupBox("显示格式")
+        format_group_layout = QHBoxLayout()
+        
+        self.base64_radio = QRadioButton("Base64 格式")
+        self.hex_radio = QRadioButton("十六进制格式")
+        self.base64_radio.setChecked(True)  # 默认选择Base64
+        
+        # 将单选按钮添加到布局
+        format_group_layout.addWidget(self.base64_radio)
+        format_group_layout.addWidget(self.hex_radio)
+        
+        # 连接信号
+        self.base64_radio.toggled.connect(self.update_result_format)
+        self.hex_radio.toggled.connect(self.update_result_format)
+        
+        self.format_group.setLayout(format_group_layout)
+        format_layout.addWidget(self.format_group)
 
         self.uppercase_check = QCheckBox("大写显示")
         self.uppercase_check.toggled.connect(self.update_result_format)
@@ -860,9 +870,6 @@ class SignatureView(QWidget):
             return
 
         try:
-            # 导入签名函数
-            from core.signature import sign
-
             # 执行签名操作
             signature = sign(
                 data=data, key=key_data, algorithm=algorithm, password=password
@@ -897,10 +904,10 @@ class SignatureView(QWidget):
             return
 
         try:
-            if self.base64_check.isChecked():
+            if self.base64_radio.isChecked():
                 # Base64 格式
                 result = base64.b64encode(self.last_signature).decode("ascii")
-            elif self.hex_check.isChecked():
+            elif self.hex_radio.isChecked():
                 # 十六进制格式
                 result = self.last_signature.hex()
                 if self.uppercase_check.isChecked():
@@ -951,6 +958,7 @@ class SignatureView(QWidget):
         self.result.clear()
         self.last_signature = b""
         self.file_info.clear()
+        self.base64_radio.setChecked(True)
 
     def verify_signature(self):
         """验证签名"""

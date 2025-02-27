@@ -52,6 +52,29 @@ def create_signature(algorithm: str, **kwargs) -> SignatureBase:
     return SignatureFactory.create(algorithm, **kwargs)
 
 
+def sign(
+    data: bytes, key: bytes, algorithm: str, password: bytes = None, **kwargs
+) -> bytes:
+    """
+    使用指定算法和私钥对数据进行签名
+
+    Args:
+        data: 要签名的数据
+        key: 私钥数据
+        algorithm: 签名算法名称
+        password: 私钥密码（如果需要）
+        **kwargs: 其他算法特定参数
+
+    Returns:
+        bytes: 签名数据
+    """
+    # 创建签名算法实例
+    signature_algo = create_signature(algorithm=algorithm, **kwargs)
+
+    # 执行签名
+    return signature_algo.sign(data=data, private_key=key, password=password)
+
+
 def list_algorithms() -> List[str]:
     """
     列出支持的签名算法

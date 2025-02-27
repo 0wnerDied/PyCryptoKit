@@ -13,7 +13,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QApplication,
     QTabWidget,
-    QSplitter,
     QMessageBox,
 )
 import os
@@ -856,9 +855,15 @@ class SignatureView(QWidget):
             return
 
         try:
-            # 创建签名
-            signature = create_signature(
-                data=data, key=key_data, algorithm=algorithm, password=password
+            # 导入签名函数
+            from core.signature import sign
+            
+            # 执行签名操作
+            signature = sign(
+                data=data, 
+                key=key_data, 
+                algorithm=algorithm, 
+                password=password
             )
 
             # 保存签名

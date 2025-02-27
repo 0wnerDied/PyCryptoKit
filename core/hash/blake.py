@@ -2,6 +2,7 @@
 BLAKE 系列哈希算法实现
 """
 
+import blake3
 import hashlib
 from abc import abstractmethod
 from typing import Union, Optional
@@ -292,6 +293,106 @@ def BLAKE2s(
         RuntimeError: 如果系统不支持BLAKE2s算法
     """
     hash_obj = BLAKE2sHash(digest_size, key, salt, person)
+    if data is not None:
+        return hash_obj.hash_data(data, encoding)
+    return hash_obj
+
+
+class BLAKE3Hash(BLAKEHash):
+    """BLAKE3 哈希算法实现"""
+
+    def __init__(self, key: bytes = b""):
+        """
+        初始化BLAKE3哈希对象
+
+        Args:
+            key: 可选的密钥。如果提供, 将使用keyed哈希模式
+
+        Raises:
+            RuntimeError: 如果系统不支持BLAKE3算法
+        """
+        super().__init__()
+
+        if not isinstance(key, bytes):
+            raise TypeError("key必须是字节类型")
+
+        self._key = key
+
+        try:
+            if key:
+                self._hash = blake3.blake3(key=key)
+            else:
+                self._hash = blake3.blake3()
+        except Exception as e:
+            raise RuntimeError(f"BLAKE3初始化失败: {str(e)}")
+
+    def copy(self) -> "BLAKE3Hash":
+        """
+        返回哈希对象的副本
+
+        Returns:
+            BLAKE3Hash: 当前哈希对象的副本
+        """
+        new_hash = BLAKE3Hash(key=self._key)
+        new_hash._hash = self._hash.copy()
+        return new_hash
+
+    def reset(self) -> None:
+        """重置哈希对象的状态"""
+        if self._key:
+            self._hash = blake3.blake3(key=self._key)
+        else:
+            self._hash = blake3.blake3()
+
+    def digest(self, length: Optional[int] = None) -> bytes:
+        """
+        返回当前数据的二进制摘要
+
+        Args:
+            length: 可选的输出长度 (字节)。BLAKE3支持任意输出长度。
+
+        Returns:
+            bytes: 哈希摘要
+        """
+        if length is not None:
+            return self._hash.digest(length)
+        return self._hash.digest()
+
+    def hexdigest(self, length: Optional[int] = None) -> str:
+        """
+        返回当前数据的十六进制摘要
+
+        Args:
+            length: 可选的输出长度 (字节)。BLAKE3支持任意输出长度。
+
+        Returns:
+            str: 十六进制格式的哈希摘要
+        """
+        if length is not None:
+            return self._hash.hexdigest(length)
+        return self._hash.hexdigest()
+
+
+def BLAKE3(
+    data: Optional[Union[str, bytes, bytearray]] = None,
+    key: bytes = b"",
+    encoding: str = "utf-8",
+) -> Union[bytes, BLAKE3Hash]:
+    """
+    计算数据的BLAKE3哈希值
+
+    Args:
+        data: 要计算哈希的数据, 如果为None则返回哈希对象
+        key: 可选的密钥
+        encoding: 如果data是字符串, 指定编码方式
+
+    Returns:
+        Union[bytes, BLAKE3Hash]: 如果提供了数据，返回哈希摘要；否则返回哈希对象
+
+    Raises:
+        RuntimeError: 如果系统不支持BLAKE3算法
+    """
+    hash_obj = BLAKE3Hash(key)
     if data is not None:
         return hash_obj.hash_data(data, encoding)
     return hash_obj

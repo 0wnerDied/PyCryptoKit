@@ -5,8 +5,8 @@
 - MD5 (不安全，仅用于兼容)
 - SHA-1 (不安全，仅用于兼容)
 - SHA-2 系列 (SHA-224, SHA-256, SHA-384, SHA-512)
-- SHA-3 系列 (SHA3-224, SHA3-256, SHA3-384, SHA3-512)
-- BLAKE2 系列 (BLAKE2b, BLAKE2s)
+- SHA-3 系列 (SHA3-224, SHA3-256, SHA3-384, SHA3-512, SHAKE128, SHAKE256)
+- BLAKE 系列 (BLAKE2b, BLAKE2s, BLAKE3)
 - SM3 (国密算法)
 """
 
@@ -16,8 +16,15 @@ from typing import Dict, Type, Any, List, Tuple
 from .base import HashBase
 from .md5 import MD5Hash
 from .sha import SHA1Hash, SHA224Hash, SHA256Hash, SHA384Hash, SHA512Hash
-from .sha3 import SHA3_224Hash, SHA3_256Hash, SHA3_384Hash, SHA3_512Hash, SHAKE128Hash, SHAKE256Hash
-from .blake import BLAKE2bHash, BLAKE2sHash
+from .sha3 import (
+    SHA3_224Hash,
+    SHA3_256Hash,
+    SHA3_384Hash,
+    SHA3_512Hash,
+    SHAKE128Hash,
+    SHAKE256Hash,
+)
+from .blake import BLAKE2bHash, BLAKE2sHash, BLAKE3Hash
 from .sm3 import SM3Hash
 
 # 算法注册表
@@ -46,6 +53,12 @@ HASH_ALGORITHMS: Dict[str, Tuple[Type[HashBase], bool, str, Dict[str, Any]]] = {
         True,
         "BLAKE2s 哈希算法",
         {"digest_size": 32, "key": b"", "salt": b"", "person": b""},
+    ),
+    "BLAKE3": (
+        BLAKE3Hash,
+        True,
+        "BLAKE3 哈希算法",
+        {"key": b""},
     ),
     "SM3": (SM3Hash, True, "SM3 国密哈希算法", {}),
 }
@@ -130,6 +143,7 @@ __all__ = [
     "SHAKE256Hash",
     "BLAKE2bHash",
     "BLAKE2sHash",
+    "BLAKE3Hash",
     "SM3Hash",
     "HashFactory",
     "create_hash",

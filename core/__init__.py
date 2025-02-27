@@ -90,6 +90,7 @@ __all__ = [
     "SHAKE256Hash",
     "BLAKE2bHash",
     "BLAKE2sHash",
+    "BLAKE3Hash",
     "SM3Hash",
     "HashFactory",
     "create_hash",

@@ -842,6 +842,11 @@ class SignatureView(QWidget):
         if key_data is None:
             return
 
+        # 检查私钥是否为空
+        if not key_data or len(key_data.strip()) == 0:
+            QMessageBox.warning(self, "错误", "请填充或选择正确私钥文件")
+            return
+
         # 获取密钥密码
         password = self.key_password.text()
         if password:
@@ -857,13 +862,10 @@ class SignatureView(QWidget):
         try:
             # 导入签名函数
             from core.signature import sign
-            
+
             # 执行签名操作
             signature = sign(
-                data=data, 
-                key=key_data, 
-                algorithm=algorithm, 
-                password=password
+                data=data, key=key_data, algorithm=algorithm, password=password
             )
 
             # 保存签名
@@ -873,7 +875,21 @@ class SignatureView(QWidget):
             self.update_result_format()
 
         except Exception as e:
-            QMessageBox.critical(self, "签名失败", f"生成签名时发生错误: {str(e)}")
+            error_msg = str(e)
+
+            # 检查是否是私钥相关错误
+            if (
+                "Could not deserialize key data" in error_msg
+                or "unsupported" in error_msg.lower()
+                or "private key" in error_msg.lower()
+                or "密钥格式" in error_msg
+                or "密码不正确" in error_msg
+            ):
+                QMessageBox.critical(self, "签名失败", "请填充或选择正确私钥文件")
+            else:
+                QMessageBox.critical(
+                    self, "签名失败", f"生成签名时发生错误: {error_msg}"
+                )
 
     def update_result_format(self):
         """更新结果显示格式"""

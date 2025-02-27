@@ -35,8 +35,8 @@ class HashView(QWidget):
         self.algo_combo = QComboBox()
         self.algo_combo.addItems(self.algorithms)
         # 默认选择 SHA-256
-        if "sha256" in self.algorithms:
-            self.algo_combo.setCurrentText("sha256")
+        if "SHA256" in self.algorithms:
+            self.algo_combo.setCurrentText("SHA256")
         algo_selector.addWidget(self.algo_combo)
         algo_layout.addLayout(algo_selector)
 

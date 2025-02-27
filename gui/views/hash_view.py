@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QApplication,
 )
+import os
+import datetime
 
 from core import (
     create_hash,
@@ -89,24 +91,14 @@ class HashView(QWidget):
         input_type_layout.addWidget(self.file_radio)
         input_layout.addLayout(input_type_layout)
 
-        # 文本输入
+        # 文本输入相关控件
+        self.text_widget = QWidget()
+        text_layout = QVBoxLayout(self.text_widget)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+
         self.text_input = QTextEdit()
         self.text_input.setPlaceholderText("在此输入要计算哈希的文本")
-        input_layout.addWidget(self.text_input)
-
-        # 文件选择
-        file_layout = QHBoxLayout()
-        self.file_path = QLineEdit()
-        self.file_path.setPlaceholderText("选择要计算哈希的文件")
-        file_layout.addWidget(self.file_path)
-        self.browse_btn = QPushButton("浏览...")
-        self.browse_btn.clicked.connect(self.browse_file)
-        file_layout.addWidget(self.browse_btn)
-        input_layout.addLayout(file_layout)
-
-        # 连接单选按钮信号
-        self.text_radio.toggled.connect(self.toggle_input_mode)
-        self.file_radio.toggled.connect(self.toggle_input_mode)
+        text_layout.addWidget(self.text_input)
 
         # 编码选项
         encoding_layout = QHBoxLayout()
@@ -120,12 +112,39 @@ class HashView(QWidget):
         # 十六进制输入选项
         self.hex_input_check = QCheckBox("十六进制输入")
         encoding_layout.addWidget(self.hex_input_check)
+        text_layout.addLayout(encoding_layout)
 
-        input_layout.addLayout(encoding_layout)
+        input_layout.addWidget(self.text_widget)
+
+        # 文件输入相关控件
+        self.file_widget = QWidget()
+        file_layout = QVBoxLayout(self.file_widget)
+        file_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 文件选择
+        file_input_layout = QHBoxLayout()
+        self.file_path = QLineEdit()
+        self.file_path.setPlaceholderText("选择要计算哈希的文件")
+        self.file_path.textChanged.connect(self.on_file_path_changed)
+        file_input_layout.addWidget(self.file_path)
+        self.browse_btn = QPushButton("浏览...")
+        self.browse_btn.clicked.connect(self.browse_file)
+        file_input_layout.addWidget(self.browse_btn)
+        file_layout.addLayout(file_input_layout)
+
+        # 文件信息标签
+        self.file_info = QLabel()
+        self.file_info.setWordWrap(True)
+        file_layout.addWidget(self.file_info)
+
+        input_layout.addWidget(self.file_widget)
+
+        # 连接单选按钮信号
+        self.text_radio.toggled.connect(self.toggle_input_mode)
+        self.file_radio.toggled.connect(self.toggle_input_mode)
 
         # 初始状态
-        self.file_path.setEnabled(False)
-        self.browse_btn.setEnabled(False)
+        self.file_widget.hide()
 
         input_group.setLayout(input_layout)
         layout.addWidget(input_group)
@@ -172,16 +191,65 @@ class HashView(QWidget):
 
     def toggle_input_mode(self):
         text_mode = self.text_radio.isChecked()
-        self.text_input.setEnabled(text_mode)
-        self.file_path.setEnabled(not text_mode)
-        self.browse_btn.setEnabled(not text_mode)
-        self.encoding_combo.setEnabled(text_mode)
-        self.hex_input_check.setEnabled(text_mode)
+        if text_mode:
+            self.text_widget.show()
+            self.file_widget.hide()
+        else:
+            self.text_widget.hide()
+            self.file_widget.show()
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "选择文件")
         if file_path:
             self.file_path.setText(file_path)
+            self.update_file_info(file_path)
+
+    def on_file_path_changed(self):
+        file_path = self.file_path.text()
+        if os.path.exists(file_path):
+            self.update_file_info(file_path)
+        else:
+            self.file_info.setText("")
+
+    def update_file_info(self, file_path):
+        try:
+            # 获取文件状态
+            file_stats = os.stat(file_path)
+
+            # 获取文件大小
+            size_bytes = file_stats.st_size
+            size_str = self.format_file_size(size_bytes)
+
+            # 获取修改时间
+            mod_time = datetime.datetime.fromtimestamp(file_stats.st_mtime)
+            mod_time_str = mod_time.strftime("%Y-%m-%d %H:%M:%S")
+
+            # 获取访问时间
+            access_time = datetime.datetime.fromtimestamp(file_stats.st_atime)
+            access_time_str = access_time.strftime("%Y-%m-%d %H:%M:%S")
+
+            # 获取创建时间（在某些系统上可能不准确）
+            create_time = datetime.datetime.fromtimestamp(file_stats.st_ctime)
+            create_time_str = create_time.strftime("%Y-%m-%d %H:%M:%S")
+
+            # 构建文件信息文本
+            info_text = f"文件名: {os.path.basename(file_path)}\n"
+            info_text += f"大小: {size_str}\n"
+            info_text += f"修改时间: {mod_time_str}\n"
+            info_text += f"访问时间: {access_time_str}\n"
+            info_text += f"创建时间: {create_time_str}"
+
+            self.file_info.setText(info_text)
+        except Exception as e:
+            self.file_info.setText(f"无法获取文件信息: {str(e)}")
+
+    def format_file_size(self, size_bytes):
+        """格式化文件大小为人类可读格式"""
+        for unit in ["B", "KB", "MB", "GB", "TB"]:
+            if size_bytes < 1024.0 or unit == "TB":
+                break
+            size_bytes /= 1024.0
+        return f"{size_bytes:.2f} {unit}"
 
     def on_algorithm_changed(self, index):
         self.update_algorithm_info()
@@ -194,7 +262,11 @@ class HashView(QWidget):
 
         try:
             info = get_hash_algorithm_info(algorithm)
-            is_secure = "安全" if algorithm in SECURE_ALGORITHMS else "不安全（已过时，仅用于兼容）"
+            is_secure = (
+                "安全"
+                if algorithm in SECURE_ALGORITHMS
+                else "不安全（已过时，仅用于兼容）"
+            )
             description = info.get("description", "")
 
             info_text = f"算法: {algorithm}\n安全性: {is_secure}\n描述: {description}"
@@ -283,5 +355,6 @@ class HashView(QWidget):
     def clear_fields(self):
         self.text_input.clear()
         self.file_path.clear()
+        self.file_info.clear()
         self.result.clear()
         self.last_result = ""

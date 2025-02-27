@@ -12,7 +12,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PyCryptoKit")
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(1280, 720)
         self.setup_ui()
 
     def setup_ui(self):

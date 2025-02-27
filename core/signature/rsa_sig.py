@@ -31,17 +31,33 @@ class RSASignature(SignatureBase):
         public_key = private_key.public_key()
         return private_key, public_key
 
-    def sign(self, data: Union[bytes, str], private_key, **kwargs) -> bytes:
+    def sign(
+        self,
+        data: Union[bytes, str],
+        private_key,
+        password: Optional[bytes] = None,
+        **kwargs
+    ) -> bytes:
         """使用 RSA 私钥对数据进行签名
 
         Args:
             data: 要签名的数据
-            private_key: RSA 私钥
+            private_key: RSA 私钥或私钥字节数据
+            password: 私钥密码（如果私钥是字节数据且已加密）
 
         Returns:
             bytes: 签名结果
         """
         data = self._ensure_bytes(data)
+
+        # 如果 private_key 是字节数据，则加载它
+        if isinstance(private_key, bytes):
+            from cryptography.hazmat.primitives.serialization import (
+                load_pem_private_key,
+            )
+
+            private_key = load_pem_private_key(private_key, password=password)
+
         signature = private_key.sign(
             data,
             padding.PSS(

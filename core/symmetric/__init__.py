@@ -1,7 +1,7 @@
 import base64
 from typing import Union, Optional
 
-from .base import Algorithm
+from .base import Algorithm, Mode, Padding
 from .factory import SymmetricFactory
 
 
@@ -21,6 +21,11 @@ def encrypt(
         key: 密钥
         iv: 初始向量(部分模式需要)
         **kwargs: 其他参数
+            key_size: 密钥长度(AES可选128、192、256位)
+            mode: 加密模式
+            padding: 填充方式
+            associated_data: GCM模式的关联数据
+            nonce: CTR模式的nonce
 
     Returns:
         bytes: 加密后的密文
@@ -56,6 +61,11 @@ def decrypt(
         key: 密钥
         iv: 初始向量(部分模式需要)
         **kwargs: 其他参数
+            key_size: 密钥长度(AES可选128、192、256位)
+            mode: 加密模式
+            padding: 填充方式
+            associated_data: GCM模式的关联数据
+            nonce: CTR模式的nonce
 
     Returns:
         bytes: 解密后的明文
@@ -121,3 +131,15 @@ def decrypt_from_base64(
     """
     ciphertext = base64.b64decode(ciphertext_b64)
     return decrypt(algorithm, ciphertext, key, iv, **kwargs)
+
+
+# 导出
+__all__ = [
+    "Algorithm",
+    "Mode",
+    "Padding",
+    "encrypt",
+    "decrypt",
+    "encrypt_to_base64",
+    "decrypt_from_base64",
+]

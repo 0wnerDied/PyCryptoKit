@@ -1,5 +1,6 @@
 from typing import Union, Optional
 import gmssl.sm4 as sm4
+import os
 
 from .base import SymmetricCipher, Mode, Padding
 
@@ -21,8 +22,10 @@ class SM4Cipher(SymmetricCipher):
         self.block_size = 16  # SM4块大小为16字节
 
         # 检查模式支持
-        if mode not in [Mode.ECB, Mode.CBC]:
-            raise ValueError(f"SM4当前仅支持ECB和CBC模式, 不支持{mode.value}")
+        self.supported_modes = [Mode.ECB, Mode.CBC]
+        if mode not in self.supported_modes:
+            supported_str = ", ".join([m.value for m in self.supported_modes])
+            raise ValueError(f"SM4当前仅支持{supported_str}模式, 不支持{mode.value}")
 
     def encrypt(
         self,
@@ -52,8 +55,8 @@ class SM4Cipher(SymmetricCipher):
         # 处理IV
         if self.mode == Mode.CBC:
             if iv is None:
-                raise ValueError("CBC模式需要提供初始向量(IV)")
-            if isinstance(iv, str):
+                iv = os.urandom(16)  # 生成随机IV
+            elif isinstance(iv, str):
                 iv = iv.encode("utf-8")
             # 确保IV长度为16字节
             iv = iv[:16].ljust(16, b"\0")
@@ -68,6 +71,12 @@ class SM4Cipher(SymmetricCipher):
             padding_length = self.block_size - (len(plaintext) % self.block_size)
             if padding_length != self.block_size:  # 只有在需要填充时才填充
                 plaintext = plaintext + b"\x00" * padding_length
+        elif self.padding == Padding.NONE:
+            # 无填充模式下，数据长度必须是块大小的整数倍
+            if len(plaintext) % self.block_size != 0:
+                raise ValueError(
+                    f"无填充模式下，数据长度必须是{self.block_size}的整数倍"
+                )
 
         # 创建加密器
         if self.mode == Mode.ECB:
@@ -115,14 +124,17 @@ class SM4Cipher(SymmetricCipher):
                 iv = iv[:16].ljust(16, b"\0")
 
         # 创建解密器
-        if self.mode == Mode.ECB:
-            crypt_sm4 = sm4.CryptSM4()
-            crypt_sm4.set_key(key, sm4.SM4_DECRYPT)
-            plaintext = crypt_sm4.crypt_ecb(ciphertext)
-        else:  # CBC模式
-            crypt_sm4 = sm4.CryptSM4()
-            crypt_sm4.set_key(key, sm4.SM4_DECRYPT)
-            plaintext = crypt_sm4.crypt_cbc(iv, ciphertext)
+        try:
+            if self.mode == Mode.ECB:
+                crypt_sm4 = sm4.CryptSM4()
+                crypt_sm4.set_key(key, sm4.SM4_DECRYPT)
+                plaintext = crypt_sm4.crypt_ecb(ciphertext)
+            else:  # CBC模式
+                crypt_sm4 = sm4.CryptSM4()
+                crypt_sm4.set_key(key, sm4.SM4_DECRYPT)
+                plaintext = crypt_sm4.crypt_cbc(iv, ciphertext)
+        except Exception as e:
+            raise ValueError(f"SM4解密失败: {str(e)}")
 
         # 去除填充
         if self.padding == Padding.PKCS7:
@@ -132,7 +144,10 @@ class SM4Cipher(SymmetricCipher):
                 padding = plaintext[-padding_length:]
                 if all(p == padding_length for p in padding):
                     plaintext = plaintext[:-padding_length]
+                else:
+                    raise ValueError("PKCS7填充验证失败")
         elif self.padding == Padding.ZERO:
             plaintext = plaintext.rstrip(b"\x00")
+        # 无填充模式不需要处理
 
         return plaintext

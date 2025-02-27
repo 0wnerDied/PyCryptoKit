@@ -1,6 +1,7 @@
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from typing import Union, Optional
+import os
 
 from .base import SymmetricCipher, Mode, Padding
 
@@ -22,10 +23,15 @@ class AESCipher(SymmetricCipher):
             mode: 加密模式
             padding: 填充方式
         """
+        # 验证密钥长度
+        if key_size not in [128, 192, 256]:
+            raise ValueError(f"AES密钥长度必须是128、192或256位，不支持{key_size}位")
+
         self.key_size = key_size
         self.key_length = key_size // 8  # 转换为字节长度
         self.mode = mode
         self.padding = padding
+        self.block_size = AES.block_size
 
         # 加密模式映射
         self.mode_map = {
@@ -36,6 +42,13 @@ class AESCipher(SymmetricCipher):
             Mode.CTR: AES.MODE_CTR,
             Mode.GCM: AES.MODE_GCM,
         }
+
+        # 验证模式支持
+        if mode not in self.mode_map:
+            supported_str = ", ".join([m.value for m in self.mode_map.keys()])
+            raise ValueError(
+                f"AES不支持{mode.value}模式，支持的模式有: {supported_str}"
+            )
 
     def encrypt(
         self,
@@ -66,47 +79,78 @@ class AESCipher(SymmetricCipher):
         iv_required = self.mode != Mode.ECB
         if iv_required:
             if iv is None:
-                raise ValueError(f"{self.mode.value}模式需要提供初始向量(IV)")
-            if isinstance(iv, str):
+                if self.mode == Mode.GCM:
+                    iv = os.urandom(12)  # GCM模式推荐12字节nonce
+                else:
+                    iv = os.urandom(16)  # 其他模式使用16字节IV
+            elif isinstance(iv, str):
                 iv = iv.encode("utf-8")
-            # 确保IV长度为16字节
-            iv = iv[:16].ljust(16, b"\0")
 
-        # 创建加密器
-        mode_value = self.mode_map[self.mode]
-        if self.mode == Mode.ECB:
-            cipher = AES.new(key, mode_value)
-        else:
-            cipher = AES.new(key, mode_value, iv=iv)
+            # 确保IV长度正确
+            if self.mode == Mode.GCM:
+                iv = iv[:12].ljust(12, b"\0")  # GCM模式推荐12字节
+            else:
+                iv = iv[:16].ljust(16, b"\0")  # 其他模式16字节
 
-        # 填充处理
+        # 填充处理 (仅ECB和CBC模式需要)
         if self.mode in [Mode.ECB, Mode.CBC]:
             if self.padding == Padding.PKCS7:
-                plaintext = pad(plaintext, AES.block_size)
+                plaintext = pad(plaintext, self.block_size)
             elif self.padding == Padding.ZERO:
                 # 零填充
-                padding_length = AES.block_size - (len(plaintext) % AES.block_size)
-                if padding_length != AES.block_size:  # 只有在需要填充时才填充
+                padding_length = self.block_size - (len(plaintext) % self.block_size)
+                if padding_length != self.block_size:  # 只有在需要填充时才填充
                     plaintext = plaintext + b"\x00" * padding_length
+            elif self.padding == Padding.NONE:
+                # 无填充模式下，数据长度必须是块大小的整数倍
+                if len(plaintext) % self.block_size != 0:
+                    raise ValueError(
+                        f"无填充模式下，数据长度必须是{self.block_size}的整数倍"
+                    )
 
-        # 特殊模式处理
-        if self.mode == Mode.GCM:
-            associated_data = kwargs.get("associated_data")
-            if isinstance(associated_data, str):
-                associated_data = associated_data.encode("utf-8")
-            if associated_data:
-                cipher.update(associated_data)
-            ciphertext, tag = cipher.encrypt_and_digest(plaintext)
-            return b"".join([cipher.nonce, tag, ciphertext])
+        # 创建加密器
+        try:
+            mode_value = self.mode_map[self.mode]
+            if self.mode == Mode.ECB:
+                cipher = AES.new(key, mode_value)
+            elif self.mode == Mode.CTR:
+                # CTR模式可以使用nonce参数
+                nonce = kwargs.get("nonce")
+                if nonce is not None:
+                    if isinstance(nonce, str):
+                        nonce = nonce.encode("utf-8")
+                    cipher = AES.new(key, mode_value, nonce=nonce[:8])
+                else:
+                    cipher = AES.new(key, mode_value, nonce=iv[:8])
+            elif self.mode == Mode.GCM:
+                cipher = AES.new(key, mode_value, nonce=iv)
+            else:
+                cipher = AES.new(key, mode_value, iv=iv)
 
-        # 普通加密
-        ciphertext = cipher.encrypt(plaintext)
+            # 特殊模式处理
+            if self.mode == Mode.GCM:
+                associated_data = kwargs.get("associated_data")
+                if associated_data is not None:
+                    if isinstance(associated_data, str):
+                        associated_data = associated_data.encode("utf-8")
+                    cipher.update(associated_data)
+                ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+                return b"".join([iv, tag, ciphertext])
 
-        # 对于需要IV的模式，将IV与密文一起返回
-        if iv_required and self.mode != Mode.GCM:
-            return b"".join([iv, ciphertext])
+            # 普通加密
+            ciphertext = cipher.encrypt(plaintext)
 
-        return ciphertext
+            # 对于需要IV的模式，将IV与密文一起返回
+            if iv_required and self.mode != Mode.GCM:
+                if self.mode == Mode.CTR:
+                    return b"".join([cipher.nonce, ciphertext])
+                else:
+                    return b"".join([iv, ciphertext])
+
+            return ciphertext
+
+        except Exception as e:
+            raise ValueError(f"AES加密失败: {str(e)}")
 
     def decrypt(
         self,
@@ -129,47 +173,82 @@ class AESCipher(SymmetricCipher):
         """
         key = self.normalize_key(key, self.key_length)
 
-        # 处理IV
-        iv_required = self.mode != Mode.ECB
-        if iv_required and self.mode != Mode.GCM:
-            if iv is None:
-                # 从密文中提取IV
-                iv, ciphertext = ciphertext[:16], ciphertext[16:]
-            elif isinstance(iv, str):
-                iv = iv.encode("utf-8")
-                # 确保IV长度为16字节
-                iv = iv[:16].ljust(16, b"\0")
+        try:
+            # 处理特殊模式
+            if self.mode == Mode.GCM:
+                if len(ciphertext) < 28:  # 至少需要12字节nonce + 16字节tag
+                    raise ValueError("GCM密文格式不正确")
 
-        # 特殊模式处理
-        if self.mode == Mode.GCM:
-            nonce, tag, ciphertext = ciphertext[:16], ciphertext[16:32], ciphertext[32:]
-            cipher = AES.new(key, self.mode_map[self.mode], nonce=nonce)
+                nonce = iv if iv is not None else ciphertext[:12]
+                if isinstance(nonce, str):
+                    nonce = nonce.encode("utf-8")
 
-            associated_data = kwargs.get("associated_data")
-            if associated_data:
-                if isinstance(associated_data, str):
-                    associated_data = associated_data.encode("utf-8")
-                cipher.update(associated_data)
+                if iv is None:
+                    # 从密文中提取nonce和tag
+                    nonce, tag, ciphertext = (
+                        ciphertext[:12],
+                        ciphertext[12:28],
+                        ciphertext[28:],
+                    )
+                else:
+                    # 使用提供的IV/nonce，从密文中提取tag
+                    tag, ciphertext = ciphertext[:16], ciphertext[16:]
 
-            plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+                cipher = AES.new(key, self.mode_map[self.mode], nonce=nonce)
+
+                # 处理AAD
+                associated_data = kwargs.get("associated_data")
+                if associated_data is not None:
+                    if isinstance(associated_data, str):
+                        associated_data = associated_data.encode("utf-8")
+                    cipher.update(associated_data)
+
+                plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+                return plaintext
+
+            # 处理其他模式
+            iv_required = self.mode != Mode.ECB
+            if iv_required:
+                if self.mode == Mode.CTR:
+                    # CTR模式处理
+                    if iv is None:
+                        # 从密文中提取nonce
+                        nonce, ciphertext = ciphertext[:8], ciphertext[8:]
+                    else:
+                        if isinstance(iv, str):
+                            nonce = iv.encode("utf-8")[:8]
+                        else:
+                            nonce = iv[:8]
+                    cipher = AES.new(key, self.mode_map[self.mode], nonce=nonce)
+                else:
+                    # 其他需要IV的模式
+                    if iv is None:
+                        # 从密文中提取IV
+                        iv, ciphertext = ciphertext[:16], ciphertext[16:]
+                    elif isinstance(iv, str):
+                        iv = iv.encode("utf-8")
+                        iv = iv[:16].ljust(16, b"\0")
+                    cipher = AES.new(key, self.mode_map[self.mode], iv=iv)
+            else:
+                # ECB模式
+                cipher = AES.new(key, self.mode_map[self.mode])
+
+            # 解密
+            plaintext = cipher.decrypt(ciphertext)
+
+            # 去除填充
+            if self.mode in [Mode.ECB, Mode.CBC]:
+                if self.padding == Padding.PKCS7:
+                    try:
+                        plaintext = unpad(plaintext, self.block_size)
+                    except ValueError:
+                        # 如果解除填充失败，可能是填充无效
+                        raise ValueError("PKCS7填充验证失败")
+                elif self.padding == Padding.ZERO:
+                    plaintext = plaintext.rstrip(b"\x00")
+                # NONE模式不需要去除填充
+
             return plaintext
 
-        # 创建解密器
-        mode_value = self.mode_map[self.mode]
-        if self.mode == Mode.ECB:
-            cipher = AES.new(key, mode_value)
-        else:
-            cipher = AES.new(key, mode_value, iv=iv)
-
-        # 解密
-        plaintext = cipher.decrypt(ciphertext)
-
-        # 去除填充
-        if self.mode in [Mode.ECB, Mode.CBC]:
-            if self.padding == Padding.PKCS7:
-                plaintext = unpad(plaintext, AES.block_size)
-            elif self.padding == Padding.ZERO:
-                # 移除零填充
-                plaintext = plaintext.rstrip(b"\x00")
-
-        return plaintext
+        except Exception as e:
+            raise ValueError(f"AES解密失败: {str(e)}")

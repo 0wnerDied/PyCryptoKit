@@ -52,6 +52,8 @@ from .signature import (
 # 导出对称加密模块的内容
 from .symmetric import (
     Algorithm as SymmetricAlgorithm,
+    Mode,
+    Padding,
     encrypt,
     decrypt,
     encrypt_to_base64,

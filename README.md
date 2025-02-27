@@ -7,10 +7,10 @@ PyCryptoKit 是一个基于 Python 开发的密码学图形工具箱，为用户
 ## 功能特点
 
 - **用户友好的图形界面**：简洁直观的界面设计，无需命令行经验
-- **多种哈希算法**：支持 MD5、SHA1、SHA256、SHA512、SHA3_256、SM3 等
+- **多种哈希算法**：支持 MD5、SHA系列、SHA3系列、BLAKE系列、SM3 等
 - **对称加密工具**：AES、SM4 等算法的加密/解密操作
 - **非对称加密工具**：RSA、ECC、SM2 等公钥密码系统
-- **数字签名验证**：支持 RSA 签名、ECDSA、SM2 签名等
+- **数字签名验证**：支持 RSA 签名、ECDSA 签名等
 - **文件操作支持**：可直接处理文件的加密、解密和哈希计算
 - **结果可视化**：清晰展示加密/解密结果，支持复制和保存
 
@@ -23,10 +23,9 @@ PyCryptoKit 是一个基于 Python 开发的密码学图形工具箱，为用户
 
 ### 架构设计
 
-PyCryptoKit 采用 MVC（模型-视图-控制器）架构设计：
+PyCryptoKit 采用 MV（模型-视图）架构设计：
 - **模型层**：核心密码学算法实现
-- **视图层**：基于 PyQt5 的图形界面
-- **控制器层**：连接模型和视图，处理用户交互
+- **视图层**：基于 PySide6 的图形界面
 
 ### 目录结构
 
@@ -40,39 +39,22 @@ PyCryptoKit/
 │   ├── hash/
 │   ├── signature/
 │   └── symmetric/
-├── gui/                 # 图形界面 (待实现)
+├── gui/                 # 图形界面 (工作中)
 │   ├── __init__.py
-│   ├── resources/
 │   ├── views/
-│   ├── widgets/
 │   ├── main_window.py
 │   └── application.py
-├── utils/               # 工具函数 (待实现)
-│   ├── __init__.py
-│   ├── file_utils.py
-│   └── config.py
-├── tests/                   # 单元测试 (待实现)
-├── docs/                    # 文档 (待实现)
 ├── requirements.txt         # 依赖列表 (待实现)
 └── README.md                # 项目说明
 ```
 
-### 核心算法模块
-
-PyCryptoKit 的核心算法模块基于 Python 的密码学库实现：
-- **哈希计算**：使用 hashlib 和 gmssl 库
-- **对称加密**：使用 pycryptodome 和 gmssl 库
-- **非对称加密**：使用 cryptography 和 gmssl 库
-- **数字签名**：使用 cryptography 和 gmssl 库
-
 ### 图形界面
 
-图形界面基于 PyQt5 实现，提供以下特性：
+图形界面基于 PySide6 实现，提供以下特性：
 - 现代化的界面设计
 - 主题切换（明/暗模式）
 - 响应式布局，适应不同屏幕尺寸
 - 拖放文件支持
-- 操作历史记录
 
 ## 常见问题解答
 

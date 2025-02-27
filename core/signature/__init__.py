@@ -8,16 +8,21 @@ from typing import Dict, Type, Any, List, Tuple
 
 # 导入所有签名算法实现
 from .base import SignatureBase
-from .rsa_sig import RSASignature
+from .rsa_sig import RSASignature, RSA_PKCS1v15Signature, RSA_PSSSignature
 from .ecdsa_sig import ECDSASignature
 
 # 算法注册表
 # 格式: {算法名称: (算法类, 描述, 默认参数)}
 SIGNATURE_ALGORITHMS: Dict[str, Tuple[Type[SignatureBase], str, Dict[str, Any]]] = {
     "RSA": (
-        RSASignature,
-        "RSA 签名算法，基于大数因子分解问题",
+        RSA_PKCS1v15Signature,
+        "传统 RSA 签名算法，使用 PKCS#1 v1.5 填充（签名结果一致）",
         {"hash_algorithm": "SHA256"},
+    ),
+    "RSA-PSS": (
+        RSA_PSSSignature,
+        "RSA-PSS 签名算法，使用 PSS 填充（可设置固定盐长度）",
+        {"hash_algorithm": "SHA256", "salt_length": 32},
     ),
     "ECDSA": (
         ECDSASignature,
@@ -72,7 +77,7 @@ def sign(
     signature_algo = create_signature(algorithm=algorithm, **kwargs)
 
     # 执行签名
-    return signature_algo.sign(data=data, private_key=key, password=password)
+    return signature_algo.sign(data=data, private_key=key, password=password, **kwargs)
 
 
 def list_algorithms() -> List[str]:
@@ -105,6 +110,8 @@ def get_algorithm_info(algorithm: str) -> Dict[str, Any]:
 __all__ = [
     "SignatureBase",
     "RSASignature",
+    "RSA_PKCS1v15Signature",
+    "RSA_PSSSignature",
     "ECDSASignature",
     "SignatureFactory",
     "create_signature",

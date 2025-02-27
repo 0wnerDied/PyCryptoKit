@@ -5,7 +5,7 @@ from .views.hash_view import HashView
 
 # from .views.symmetric_view import SymmetricView
 # from .views.asymmetric_view import AsymmetricView
-# from .views.signature_view import SignatureView
+from .views.signature_view import SignatureView
 
 
 class MainWindow(QMainWindow):
@@ -38,12 +38,12 @@ class MainWindow(QMainWindow):
         self.hash_view = HashView()
         # self.symmetric_view = SymmetricView()
         # self.asymmetric_view = AsymmetricView()
-        # self.signature_view = SignatureView()
+        self.signature_view = SignatureView()
 
         self.tabs.addTab(self.hash_view, "哈希计算")
         # self.tabs.addTab(self.symmetric_view, "对称加密")
         # self.tabs.addTab(self.asymmetric_view, "非对称加密")
-        # self.tabs.addTab(self.signature_view, "数字签名")
+        self.tabs.addTab(self.signature_view, "数字签名")
 
         # 状态栏
         self.statusBar().showMessage("就绪")

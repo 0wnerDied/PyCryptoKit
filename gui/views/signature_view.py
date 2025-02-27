@@ -252,23 +252,23 @@ class SignatureView(QWidget):
 
         # 显示格式选项
         format_layout = QHBoxLayout()
-        
+
         # 创建互斥的格式选择
         self.format_group = QGroupBox("显示格式")
         format_group_layout = QHBoxLayout()
-        
+
         self.base64_radio = QRadioButton("Base64 格式")
         self.hex_radio = QRadioButton("十六进制格式")
         self.base64_radio.setChecked(True)  # 默认选择Base64
-        
+
         # 将单选按钮添加到布局
         format_group_layout.addWidget(self.base64_radio)
         format_group_layout.addWidget(self.hex_radio)
-        
+
         # 连接信号
         self.base64_radio.toggled.connect(self.update_result_format)
         self.hex_radio.toggled.connect(self.update_result_format)
-        
+
         self.format_group.setLayout(format_group_layout)
         format_layout.addWidget(self.format_group)
 

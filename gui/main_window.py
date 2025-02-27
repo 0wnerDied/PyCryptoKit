@@ -1,6 +1,7 @@
-from PySide6.QtWidgets import QMainWindow, QTabWidget
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QScrollArea
+from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
+
 from .views.hash_view import HashView
 
 # from .views.symmetric_view import SymmetricView
@@ -34,11 +35,9 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
 
-        # 添加功能页面
-        self.hash_view = HashView()
-        # self.symmetric_view = SymmetricView()
-        # self.asymmetric_view = AsymmetricView()
-        self.signature_view = SignatureView()
+        # 添加功能页面并使其可滚动
+        self.hash_view = self.create_scrollable_view(HashView())
+        self.signature_view = self.create_scrollable_view(SignatureView())
 
         self.tabs.addTab(self.hash_view, "哈希计算")
         # self.tabs.addTab(self.symmetric_view, "对称加密")
@@ -47,6 +46,17 @@ class MainWindow(QMainWindow):
 
         # 状态栏
         self.statusBar().showMessage("就绪")
+
+    def create_scrollable_view(self, view):
+        """
+        将视图包装在滚动区域中
+        """
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)  # 允许小部件调整大小
+        scroll.setWidget(view)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        return scroll
 
     def show_about(self):
         from PySide6.QtWidgets import QMessageBox

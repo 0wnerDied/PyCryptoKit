@@ -14,8 +14,6 @@ from PySide6.QtWidgets import (
     QApplication,
 )
 import os
-import platform
-import subprocess
 
 from core import (
     create_hash,
@@ -212,29 +210,6 @@ class HashView(QWidget):
         else:
             self.file_info.setText("")
 
-    def get_file_origin(self, file_path):
-        """尝试获取文件的来源信息 (仅支持macOS)"""
-        try:
-            # 检查是否为 macOS
-            if platform.system() == "Darwin":
-                # 在macOS上尝试获取com.apple.metadata:kMDItemWhereFroms属性
-                try:
-                    cmd = f'xattr -p com.apple.metadata:kMDItemWhereFroms "{file_path}" | xxd -r -p | plutil -convert json -o - -'
-                    result = subprocess.check_output(
-                        cmd, shell=True, text=True, stderr=subprocess.DEVNULL
-                    )
-                    import json
-
-                    urls = json.loads(result)
-                    if urls and len(urls) > 0:
-                        return urls[0]  # 返回第一个URL
-                except:
-                    pass
-        except:
-            pass
-
-        return "NULL"  # 如果无法获取来源或非macOS系统，返回NULL
-
     def update_file_info(self, file_path):
         try:
             # 获取文件状态
@@ -247,11 +222,6 @@ class HashView(QWidget):
             # 构建文件信息文本
             info_text = f"文件名: {os.path.basename(file_path)}\n"
             info_text += f"大小: {size_str}\n"
-            # 只在macOS系统上显示文件来源
-            if platform.system() == "Darwin":
-                # 获取文件来源
-                origin = self.get_file_origin(file_path)
-                info_text += f"文件来源: {origin}\n"
 
             self.file_info.setText(info_text)
         except Exception as e:

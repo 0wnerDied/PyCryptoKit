@@ -86,6 +86,8 @@ __all__ = [
     "SHA3_256Hash",
     "SHA3_384Hash",
     "SHA3_512Hash",
+    "SHAKE128Hash",
+    "SHAKE256Hash",
     "BLAKE2bHash",
     "BLAKE2sHash",
     "SM3Hash",

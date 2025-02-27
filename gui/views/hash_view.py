@@ -14,7 +14,8 @@ from PySide6.QtWidgets import (
     QApplication,
 )
 import os
-import datetime
+import platform
+import subprocess
 
 from core import (
     create_hash,
@@ -211,6 +212,29 @@ class HashView(QWidget):
         else:
             self.file_info.setText("")
 
+    def get_file_origin(self, file_path):
+        """尝试获取文件的来源信息 (仅支持macOS)"""
+        try:
+            # 检查是否为 macOS
+            if platform.system() == "Darwin":
+                # 在macOS上尝试获取com.apple.metadata:kMDItemWhereFroms属性
+                try:
+                    cmd = f'xattr -p com.apple.metadata:kMDItemWhereFroms "{file_path}" | xxd -r -p | plutil -convert json -o - -'
+                    result = subprocess.check_output(
+                        cmd, shell=True, text=True, stderr=subprocess.DEVNULL
+                    )
+                    import json
+
+                    urls = json.loads(result)
+                    if urls and len(urls) > 0:
+                        return urls[0]  # 返回第一个URL
+                except:
+                    pass
+        except:
+            pass
+
+        return "NULL"  # 如果无法获取来源或非macOS系统，返回NULL
+
     def update_file_info(self, file_path):
         try:
             # 获取文件状态
@@ -220,31 +244,21 @@ class HashView(QWidget):
             size_bytes = file_stats.st_size
             size_str = self.format_file_size(size_bytes)
 
-            # 获取修改时间
-            mod_time = datetime.datetime.fromtimestamp(file_stats.st_mtime)
-            mod_time_str = mod_time.strftime("%Y-%m-%d %H:%M:%S")
-
-            # 获取访问时间
-            access_time = datetime.datetime.fromtimestamp(file_stats.st_atime)
-            access_time_str = access_time.strftime("%Y-%m-%d %H:%M:%S")
-
-            # 获取创建时间（在某些系统上可能不准确）
-            create_time = datetime.datetime.fromtimestamp(file_stats.st_ctime)
-            create_time_str = create_time.strftime("%Y-%m-%d %H:%M:%S")
-
             # 构建文件信息文本
             info_text = f"文件名: {os.path.basename(file_path)}\n"
             info_text += f"大小: {size_str}\n"
-            info_text += f"修改时间: {mod_time_str}\n"
-            info_text += f"访问时间: {access_time_str}\n"
-            info_text += f"创建时间: {create_time_str}"
+            # 只在macOS系统上显示文件来源
+            if platform.system() == "Darwin":
+                # 获取文件来源
+                origin = self.get_file_origin(file_path)
+                info_text += f"文件来源: {origin}\n"
 
             self.file_info.setText(info_text)
         except Exception as e:
             self.file_info.setText(f"无法获取文件信息: {str(e)}")
 
     def format_file_size(self, size_bytes):
-        """格式化文件大小为人类可读格式"""
+        """格式化文件大小"""
         for unit in ["B", "KB", "MB", "GB", "TB"]:
             if size_bytes < 1024.0 or unit == "TB":
                 break

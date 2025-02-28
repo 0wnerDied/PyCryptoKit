@@ -144,7 +144,7 @@ __all__ = [
     "RSA_PKCS1v15Signature",
     "RSA_PSSSignature",
     "ECDSASignature",
-    "EdDSASignature"
+    "EdDSASignature",
     "SignatureFactory",
     "create_signature",
     "list_algorithms",

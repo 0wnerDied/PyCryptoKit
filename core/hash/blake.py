@@ -1,21 +1,19 @@
 """
 BLAKE 系列哈希算法实现
+
+提供 BLAKE2b、BLAKE2s 和 BLAKE3 哈希算法的实现。
+BLAKE2b 和 BLAKE2s 基于 cryptography 库，
+BLAKE3 使用 blake3 库实现。
 """
 
 import blake3
-import hashlib
-from abc import abstractmethod
 from typing import Union, Optional
-
+from cryptography.hazmat.primitives import hashes
 from .base import HashBase
 
 
 class BLAKEHash(HashBase):
     """BLAKE 哈希算法基类"""
-
-    def __init__(self):
-        """初始化BLAKE哈希对象"""
-        self._hash = None  # 将在子类中初始化
 
     def update(self, data: Union[str, bytes, bytearray, memoryview]) -> None:
         """
@@ -31,42 +29,21 @@ class BLAKEHash(HashBase):
             data = data.encode("utf-8")
         self._hash.update(data)
 
-    def digest(self) -> bytes:
-        """
-        返回当前数据的二进制摘要
-
-        Returns:
-            bytes: 哈希摘要
-        """
-        return self._hash.digest()
-
-    def hexdigest(self) -> str:
-        """
-        返回当前数据的十六进制摘要
-
-        Returns:
-            str: 十六进制格式的哈希摘要
-        """
-        return self._hash.hexdigest()
-
-    @abstractmethod
-    def copy(self) -> "BLAKEHash":
-        """
-        返回哈希对象的副本
-
-        Returns:
-            BLAKEHash: 当前哈希对象的副本
-        """
-        raise NotImplementedError("子类必须实现此方法")
-
-    @abstractmethod
-    def reset(self) -> None:
-        """重置哈希对象的状态"""
-        raise NotImplementedError("子类必须实现此方法")
-
 
 class BLAKE2bHash(BLAKEHash):
-    """BLAKE2b 哈希算法实现"""
+    """BLAKE2b 哈希算法实现，基于 cryptography 库"""
+
+    @property
+    def name(self) -> str:
+        return "BLAKE2b"
+
+    @property
+    def digest_size(self) -> int:
+        return self._digest_size
+
+    @property
+    def block_size(self) -> int:
+        return 128
 
     def __init__(
         self,
@@ -87,10 +64,7 @@ class BLAKE2bHash(BLAKEHash):
         Raises:
             ValueError: 如果参数值超出有效范围
             TypeError: 如果参数类型不正确
-            RuntimeError: 如果系统不支持BLAKE2b算法
         """
-        super().__init__()
-
         # 参数验证
         if not isinstance(digest_size, int):
             raise TypeError("digest_size必须是整数")
@@ -115,12 +89,33 @@ class BLAKE2bHash(BLAKEHash):
         self._salt = salt
         self._person = person
 
-        try:
-            self._hash = hashlib.blake2b(
-                digest_size=digest_size, key=key, salt=salt, person=person
-            )
-        except AttributeError:
-            raise RuntimeError("当前系统不支持BLAKE2b算法")
+        # 使用 cryptography 库的 BLAKE2b 实现
+        self._algorithm = hashes.BLAKE2b(
+            digest_size=digest_size,
+            key=key if key else None,
+            salt=salt if salt else None,
+            person=person if person else None,
+        )
+        self._hash = hashes.Hash(self._algorithm)
+
+    def digest(self) -> bytes:
+        """
+        返回当前数据的二进制摘要
+
+        Returns:
+            bytes: 哈希摘要
+        """
+        hash_copy = self._hash.copy()
+        return hash_copy.finalize()
+
+    def hexdigest(self) -> str:
+        """
+        返回当前数据的十六进制摘要
+
+        Returns:
+            str: 十六进制格式的哈希摘要
+        """
+        return self.digest().hex()
 
     def copy(self) -> "BLAKE2bHash":
         """
@@ -140,16 +135,23 @@ class BLAKE2bHash(BLAKEHash):
 
     def reset(self) -> None:
         """重置哈希对象的状态"""
-        self._hash = hashlib.blake2b(
-            digest_size=self._digest_size,
-            key=self._key,
-            salt=self._salt,
-            person=self._person,
-        )
+        self._hash = hashes.Hash(self._algorithm)
 
 
 class BLAKE2sHash(BLAKEHash):
-    """BLAKE2s 哈希算法实现"""
+    """BLAKE2s 哈希算法实现，基于 cryptography 库"""
+
+    @property
+    def name(self) -> str:
+        return "BLAKE2s"
+
+    @property
+    def digest_size(self) -> int:
+        return self._digest_size
+
+    @property
+    def block_size(self) -> int:
+        return 64
 
     def __init__(
         self,
@@ -170,10 +172,7 @@ class BLAKE2sHash(BLAKEHash):
         Raises:
             ValueError: 如果参数值超出有效范围
             TypeError: 如果参数类型不正确
-            RuntimeError: 如果系统不支持BLAKE2s算法
         """
-        super().__init__()
-
         # 参数验证
         if not isinstance(digest_size, int):
             raise TypeError("digest_size必须是整数")
@@ -198,12 +197,33 @@ class BLAKE2sHash(BLAKEHash):
         self._salt = salt
         self._person = person
 
-        try:
-            self._hash = hashlib.blake2s(
-                digest_size=digest_size, key=key, salt=salt, person=person
-            )
-        except AttributeError:
-            raise RuntimeError("当前系统不支持BLAKE2s算法")
+        # 使用 cryptography 库的 BLAKE2s 实现
+        self._algorithm = hashes.BLAKE2s(
+            digest_size=digest_size,
+            key=key if key else None,
+            salt=salt if salt else None,
+            person=person if person else None,
+        )
+        self._hash = hashes.Hash(self._algorithm)
+
+    def digest(self) -> bytes:
+        """
+        返回当前数据的二进制摘要
+
+        Returns:
+            bytes: 哈希摘要
+        """
+        hash_copy = self._hash.copy()
+        return hash_copy.finalize()
+
+    def hexdigest(self) -> str:
+        """
+        返回当前数据的十六进制摘要
+
+        Returns:
+            str: 十六进制格式的哈希摘要
+        """
+        return self.digest().hex()
 
     def copy(self) -> "BLAKE2sHash":
         """
@@ -223,83 +243,23 @@ class BLAKE2sHash(BLAKEHash):
 
     def reset(self) -> None:
         """重置哈希对象的状态"""
-        self._hash = hashlib.blake2s(
-            digest_size=self._digest_size,
-            key=self._key,
-            salt=self._salt,
-            person=self._person,
-        )
-
-
-# 导出函数
-def BLAKE2b(
-    data: Optional[Union[str, bytes, bytearray]] = None,
-    digest_size: int = 64,
-    key: bytes = b"",
-    salt: bytes = b"",
-    person: bytes = b"",
-    encoding: str = "utf-8",
-) -> Union[bytes, BLAKE2bHash]:
-    """
-    计算数据的BLAKE2b哈希值
-
-    Args:
-        data: 要计算哈希的数据, 如果为None则返回哈希对象
-        digest_size: 摘要大小 (字节数), 1到64之间
-        key: 可选的密钥
-        salt: 可选的盐值 (最多16字节)
-        person: 可选的个性化字符串 (最多16字节)
-        encoding: 如果data是字符串, 指定编码方式
-
-    Returns:
-        Union[bytes, BLAKE2bHash]: 如果提供了数据，返回哈希摘要；否则返回哈希对象
-
-    Raises:
-        ValueError: 如果参数值无效
-        TypeError: 如果参数类型不正确
-        RuntimeError: 如果系统不支持BLAKE2b算法
-    """
-    hash_obj = BLAKE2bHash(digest_size, key, salt, person)
-    if data is not None:
-        return hash_obj.hash_data(data, encoding)
-    return hash_obj
-
-
-def BLAKE2s(
-    data: Optional[Union[str, bytes, bytearray]] = None,
-    digest_size: int = 32,
-    key: bytes = b"",
-    salt: bytes = b"",
-    person: bytes = b"",
-    encoding: str = "utf-8",
-) -> Union[bytes, BLAKE2sHash]:
-    """
-    计算数据的BLAKE2s哈希值
-
-    Args:
-        data: 要计算哈希的数据, 如果为None则返回哈希对象
-        digest_size: 摘要大小 (字节数), 1到32之间
-        key: 可选的密钥
-        salt: 可选的盐值 (最多8字节)
-        person: 可选的个性化字符串 (最多8字节)
-        encoding: 如果data是字符串, 指定编码方式
-
-    Returns:
-        Union[bytes, BLAKE2sHash]: 如果提供了数据，返回哈希摘要；否则返回哈希对象
-
-    Raises:
-        ValueError: 如果参数值无效
-        TypeError: 如果参数类型不正确
-        RuntimeError: 如果系统不支持BLAKE2s算法
-    """
-    hash_obj = BLAKE2sHash(digest_size, key, salt, person)
-    if data is not None:
-        return hash_obj.hash_data(data, encoding)
-    return hash_obj
+        self._hash = hashes.Hash(self._algorithm)
 
 
 class BLAKE3Hash(BLAKEHash):
-    """BLAKE3 哈希算法实现"""
+    """BLAKE3 哈希算法实现，使用 blake3 库"""
+
+    @property
+    def name(self) -> str:
+        return "BLAKE3"
+
+    @property
+    def digest_size(self) -> int:
+        return 32  # BLAKE3 默认摘要大小是 32 字节
+
+    @property
+    def block_size(self) -> int:
+        return 64  # BLAKE3 的块大小是 64 字节
 
     def __init__(self, key: bytes = b""):
         """
@@ -311,8 +271,6 @@ class BLAKE3Hash(BLAKEHash):
         Raises:
             RuntimeError: 如果系统不支持BLAKE3算法
         """
-        super().__init__()
-
         if not isinstance(key, bytes):
             raise TypeError("key必须是字节类型")
 
@@ -371,28 +329,3 @@ class BLAKE3Hash(BLAKEHash):
         if length is not None:
             return self._hash.hexdigest(length)
         return self._hash.hexdigest()
-
-
-def BLAKE3(
-    data: Optional[Union[str, bytes, bytearray]] = None,
-    key: bytes = b"",
-    encoding: str = "utf-8",
-) -> Union[bytes, BLAKE3Hash]:
-    """
-    计算数据的BLAKE3哈希值
-
-    Args:
-        data: 要计算哈希的数据, 如果为None则返回哈希对象
-        key: 可选的密钥
-        encoding: 如果data是字符串, 指定编码方式
-
-    Returns:
-        Union[bytes, BLAKE3Hash]: 如果提供了数据，返回哈希摘要；否则返回哈希对象
-
-    Raises:
-        RuntimeError: 如果系统不支持BLAKE3算法
-    """
-    hash_obj = BLAKE3Hash(key)
-    if data is not None:
-        return hash_obj.hash_data(data, encoding)
-    return hash_obj

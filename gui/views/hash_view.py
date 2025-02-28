@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QRadioButton,
     QCheckBox,
     QApplication,
+    QMessageBox,
 )
 import os
 
@@ -136,6 +137,12 @@ class HashView(QWidget):
         self.file_info.setWordWrap(True)
         file_layout.addWidget(self.file_info)
 
+        # SM3不支持文件哈希计算的提示标签
+        self.sm3_file_warning = QLabel("当前暂不支持 SM3 文件哈希计算")
+        self.sm3_file_warning.setStyleSheet("color: red;")
+        self.sm3_file_warning.hide()
+        file_layout.addWidget(self.sm3_file_warning)
+
         input_layout.addWidget(self.file_widget)
 
         # 连接单选按钮信号
@@ -188,6 +195,9 @@ class HashView(QWidget):
 
         self.setLayout(layout)
 
+        # 初始检查算法是否为SM3
+        self.check_if_sm3()
+
     def toggle_input_mode(self):
         text_mode = self.text_radio.isChecked()
         if text_mode:
@@ -196,6 +206,13 @@ class HashView(QWidget):
         else:
             self.text_widget.hide()
             self.file_widget.show()
+
+            # 如果当前是SM3算法且切换到文件模式，强制切回文本模式并显示警告
+            if self.algo_combo.currentText() == "SM3":
+                self.text_radio.setChecked(True)
+                QMessageBox.warning(
+                    self, "不支持的操作", "当前暂不支持 SM3 文件哈希计算"
+                )
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "选择文件")
@@ -237,6 +254,21 @@ class HashView(QWidget):
 
     def on_algorithm_changed(self, index):
         self.update_algorithm_info()
+        self.check_if_sm3()
+
+    def check_if_sm3(self):
+        """检查当前选择的算法是否为SM3, 并相应地调整UI"""
+        is_sm3 = self.algo_combo.currentText() == "SM3"
+
+        # 如果是SM3，禁用文件输入选项
+        self.file_radio.setEnabled(not is_sm3)
+
+        # 如果当前是SM3且处于文件模式，切换到文本模式
+        if is_sm3 and self.file_radio.isChecked():
+            self.text_radio.setChecked(True)
+            QMessageBox.information(
+                self, "提示", "当前暂不支持 SM3 文件哈希计算，已切换到文本输入模式"
+            )
 
     def update_algorithm_info(self):
         algorithm = self.algo_combo.currentText()
@@ -263,6 +295,11 @@ class HashView(QWidget):
 
         if not algorithm:
             self.result.setText("请选择有效的哈希算法")
+            return
+
+        # 如果是SM3且尝试计算文件哈希，显示警告并返回
+        if algorithm == "SM3" and self.file_radio.isChecked():
+            self.result.setText("当前暂不支持 SM3 文件哈希计算")
             return
 
         try:
@@ -331,6 +368,7 @@ class HashView(QWidget):
             result_text
             and not result_text.startswith("请")
             and not result_text.startswith("计算错误")
+            and not result_text.startswith("当前暂不支持")
         ):
             clipboard = QApplication.clipboard()
             clipboard.setText(result_text)

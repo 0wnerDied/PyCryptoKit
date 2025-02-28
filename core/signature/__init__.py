@@ -17,23 +17,23 @@ from .eddsa_sig import EdDSASignature
 SIGNATURE_ALGORITHMS: Dict[str, Tuple[Type[SignatureBase], str, Dict[str, Any]]] = {
     "RSA": (
         RSA_PKCS1v15Signature,
-        "传统 RSA 签名算法，使用 PKCS#1 v1.5 填充（签名结果一致）",
-        {"hash_algorithm": "SHA256"},
+        "传统 RSA 签名算法，使用 PKCS#1 v1.5 填充",
+        {"哈希算法": "SHA256"},
     ),
     "RSA-PSS": (
         RSA_PSSSignature,
-        "RSA-PSS 签名算法，使用 PSS 填充（可设置固定盐长度）",
-        {"hash_algorithm": "SHA256", "salt_length": 32},
+        "RSA-PSS 签名算法，使用 PSS 填充",
+        {"哈希算法": "SHA256", "盐长度": 32},
     ),
     "ECDSA": (
         ECDSASignature,
         "ECDSA 椭圆曲线数字签名算法",
-        {"curve": "SECP256R1", "hash_algorithm": "SHA256"},
+        {"曲线": "SECP256R1", "哈希算法": "SHA256"},
     ),
     "EdDSA": (
         EdDSASignature,
-        "EdDSA 爱德华兹曲线数字签名算法(Ed25519)",
-        {},
+        "EdDSA 爱德华兹曲线数字签名算法",
+        {"曲线": "ED25519"},
     ),
 }
 

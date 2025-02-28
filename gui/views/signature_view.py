@@ -537,7 +537,7 @@ class SignatureView(QWidget):
                 description = info.get("description", "")
                 default_params = info.get("default_params", {})
 
-                params_str = ", ".join([f"{k}={v}" for k, v in default_params.items()])
+                params_str = ", ".join([f"{k}: {v}" for k, v in default_params.items()])
                 info_text = f"{description}\n默认参数: {params_str}"
                 self.sign_algo_info.setText(info_text)
             except Exception as e:
@@ -552,7 +552,7 @@ class SignatureView(QWidget):
                 description = info.get("description", "")
                 default_params = info.get("default_params", {})
 
-                params_str = ", ".join([f"{k}={v}" for k, v in default_params.items()])
+                params_str = ", ".join([f"{k}: {v}" for k, v in default_params.items()])
                 info_text = f"{description}\n默认参数: {params_str}"
                 self.verify_algo_info.setText(info_text)
             except Exception as e:

@@ -88,30 +88,30 @@ class SignatureFactory:
         processed_kwargs = {}
 
         # 处理哈希算法
-        if "hash_algorithm" in kwargs:
-            hash_alg = kwargs.pop("hash_algorithm")
+        if "哈希算法" in kwargs:
+            hash_alg = kwargs.pop("哈希算法")
             if isinstance(hash_alg, str):
                 hash_alg = hash_alg.upper()
                 if hasattr(hashes, hash_alg):
-                    processed_kwargs["hash_algorithm"] = getattr(hashes, hash_alg)()
+                    processed_kwargs["哈希算法"] = getattr(hashes, hash_alg)()
                 else:
                     raise ValueError(f"不支持的哈希算法: {hash_alg}")
             else:
                 # 假设已经是哈希算法实例
-                processed_kwargs["hash_algorithm"] = hash_alg
+                processed_kwargs["哈希算法"] = hash_alg
 
         # 处理椭圆曲线（仅适用于 ECDSA）
-        if algorithm == "ECDSA" and "curve" in kwargs:
-            curve = kwargs.pop("curve")
+        if algorithm == "ECDSA" and "曲线" in kwargs:
+            curve = kwargs.pop("曲线")
             if isinstance(curve, str):
                 curve = curve.upper()
                 if hasattr(ec, curve):
-                    processed_kwargs["curve"] = getattr(ec, curve)()
+                    processed_kwargs["曲线"] = getattr(ec, curve)()
                 else:
                     raise ValueError(f"不支持的椭圆曲线: {curve}")
             else:
                 # 假设已经是曲线实例
-                processed_kwargs["curve"] = curve
+                processed_kwargs["曲线"] = curve
 
         # 合并其他参数
         processed_kwargs.update(kwargs)

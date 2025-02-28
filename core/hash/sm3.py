@@ -1,16 +1,11 @@
-"""
-国密 SM3 哈希算法实现
-"""
+"""国密SM3哈希算法实现"""
 
 from typing import Union, Optional
 import binascii
 from math import ceil
 from .base import HashBase
 
-rotl = lambda x, n: ((x << n) & 0xFFFFFFFF) | ((x >> (32 - n)) & 0xFFFFFFFF)
-bytes_to_list = lambda data: [i for i in data]
-
-# SM3 初始向量
+# 常量定义
 IV = [
     1937774191,
     1226093241,
@@ -21,287 +16,138 @@ IV = [
     3817729613,
     2969243214,
 ]
+T_j = [2043430169] * 16 + [2055708042] * 48
 
-# 常量 T_j
-T_j = [
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2043430169,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-    2055708042,
-]
+
+def rotl(x, n):
+    n %= 32  # 确保移位数在有效范围内
+    return ((x << n) & 0xFFFFFFFF) | ((x >> (32 - n)) & 0xFFFFFFFF)
 
 
 def sm3_ff_j(x, y, z, j):
-    if 0 <= j and j < 16:
-        ret = x ^ y ^ z
-    elif 16 <= j and j < 64:
-        ret = (x & y) | (x & z) | (y & z)
-    return ret
+    return (x ^ y ^ z) if j < 16 else ((x & y) | (x & z) | (y & z))
 
 
 def sm3_gg_j(x, y, z, j):
-    if 0 <= j and j < 16:
-        ret = x ^ y ^ z
-    elif 16 <= j and j < 64:
-        ret = (x & y) | ((~x) & z)
-    return ret
+    return (x ^ y ^ z) if j < 16 else ((x & y) | ((~x) & z))
 
 
 def sm3_p_0(x):
-    return x ^ (rotl(x, 9 % 32)) ^ (rotl(x, 17 % 32))
+    return x ^ rotl(x, 9) ^ rotl(x, 17)
 
 
 def sm3_p_1(x):
-    return x ^ (rotl(x, 15 % 32)) ^ (rotl(x, 23 % 32))
+    return x ^ rotl(x, 15) ^ rotl(x, 23)
 
 
 def sm3_cf(v_i, b_i):
-    w = []
+    w = [0] * 68
     for i in range(16):
-        weight = 0x1000000
-        data = 0
-        for k in range(i * 4, (i + 1) * 4):
-            data = data + b_i[k] * weight
-            weight = int(weight / 0x100)
-        w.append(data)
+        w[i] = int.from_bytes(b_i[i * 4 : (i + 1) * 4], byteorder="big")
 
     for j in range(16, 68):
-        w.append(0)
         w[j] = (
-            sm3_p_1(w[j - 16] ^ w[j - 9] ^ (rotl(w[j - 3], 15 % 32)))
-            ^ (rotl(w[j - 13], 7 % 32))
+            sm3_p_1(w[j - 16] ^ w[j - 9] ^ rotl(w[j - 3], 15))
+            ^ rotl(w[j - 13], 7)
             ^ w[j - 6]
         )
 
-    w_1 = []
-    for j in range(0, 64):
-        w_1.append(0)
-        w_1[j] = w[j] ^ w[j + 4]
+    w_1 = [w[j] ^ w[j + 4] for j in range(64)]
 
     a, b, c, d, e, f, g, h = v_i
 
-    for j in range(0, 64):
-        ss_1 = rotl(
-            ((rotl(a, 12 % 32)) + e + (rotl(T_j[j], j % 32))) & 0xFFFFFFFF, 7 % 32
-        )
-        ss_2 = ss_1 ^ (rotl(a, 12 % 32))
+    for j in range(64):
+        ss_1 = rotl((rotl(a, 12) + e + rotl(T_j[j], j % 32)) & 0xFFFFFFFF, 7)
+        ss_2 = ss_1 ^ rotl(a, 12)
         tt_1 = (sm3_ff_j(a, b, c, j) + d + ss_2 + w_1[j]) & 0xFFFFFFFF
         tt_2 = (sm3_gg_j(e, f, g, j) + h + ss_1 + w[j]) & 0xFFFFFFFF
-        d = c
-        c = rotl(b, 9 % 32)
-        b = a
-        a = tt_1
-        h = g
-        g = rotl(f, 19 % 32)
-        f = e
-        e = sm3_p_0(tt_2)
+        d, c, b, a = c, rotl(b, 9), a, tt_1
+        h, g, f, e = g, rotl(f, 19), e, sm3_p_0(tt_2)
 
-        a, b, c, d, e, f, g, h = map(lambda x: x & 0xFFFFFFFF, [a, b, c, d, e, f, g, h])
-
-    v_j = [a, b, c, d, e, f, g, h]
-    return [v_j[i] ^ v_i[i] for i in range(8)]
+    return [
+        (v_j & 0xFFFFFFFF) ^ v_i[i] for i, v_j in enumerate([a, b, c, d, e, f, g, h])
+    ]
 
 
 def sm3_hash_raw(msg):
-    """原始SM3哈希计算函数"""
-    len1 = len(msg)
-    reserve1 = len1 % 64
+    # 填充
+    msg_len = len(msg)
+    msg = bytearray(msg)
     msg.append(0x80)
-    reserve1 = reserve1 + 1
-    # 56-64, add 64 byte
-    range_end = 56
-    if reserve1 > range_end:
-        range_end = range_end + 64
 
-    for i in range(reserve1, range_end):
-        msg.append(0x00)
+    # 补齐长度
+    padding_len = 56 - (len(msg) % 64)
+    if padding_len <= 0:
+        padding_len += 64
+    msg.extend([0] * padding_len)
 
-    bit_length = (len1) * 8
-    bit_length_str = [bit_length % 0x100]
-    for i in range(7):
-        bit_length = int(bit_length / 0x100)
-        bit_length_str.append(bit_length % 0x100)
-    for i in range(8):
-        msg.append(bit_length_str[7 - i])
+    # 添加消息长度（比特）
+    bit_length = msg_len * 8
+    msg.extend(bit_length.to_bytes(8, byteorder="big"))
 
+    # 分组处理
     group_count = len(msg) // 64
+    v = [IV]
 
-    B = []
-    for i in range(0, group_count):
-        B.append(msg[i * 64 : (i + 1) * 64])
+    for i in range(group_count):
+        v.append(sm3_cf(v[i], msg[i * 64 : (i + 1) * 64]))
 
-    V = []
-    V.append(IV)
-    for i in range(0, group_count):
-        V.append(sm3_cf(V[i], B[i]))
-
-    y = V[i + 1]
-    result = ""
-    for i in y:
-        result = "%s%08x" % (result, i)
-    return result
-
-
-def sm3_kdf(z, klen):  # z为16进制表示的比特串（str），klen为密钥长度（单位byte）
-    klen = int(klen)
-    ct = 0x00000001
-    rcnt = ceil(klen / 32)
-    zin = [i for i in bytes.fromhex(z.decode("utf8"))]
-    ha = ""
-    for i in range(rcnt):
-        msg = zin + [i for i in binascii.a2b_hex(("%08x" % ct).encode("utf8"))]
-        ha = ha + sm3_hash_raw(msg)
-        ct += 1
-    return ha[0 : klen * 2]
+    return "".join(f"{i:08x}" for i in v[-1])
 
 
 class SM3Hash(HashBase):
-    """SM3 哈希算法实现"""
+    """SM3哈希算法实现"""
+
+    name = "sm3"
+    digest_size = 32
+    block_size = 64
 
     def __init__(self):
-        """初始化SM3哈希对象"""
         self._buffer = bytearray()
 
-    def update(self, data: Union[bytes, bytearray, memoryview]) -> None:
-        """
-        更新哈希对象的状态
+    def update(self, data):
+        if isinstance(data, (bytes, bytearray, memoryview)):
+            self._buffer.extend(data)
+        else:
+            raise TypeError(f"不支持的数据类型: {type(data).__name__}")
+        return self
 
-        Args:
-            data: 要添加到哈希计算中的字节数据
-        """
-        # 将数据添加到缓冲区
-        self._buffer.extend(data)
+    def digest(self):
+        return binascii.unhexlify(self.hexdigest())
 
-    def digest(self) -> bytes:
-        """
-        返回当前数据的二进制摘要
+    def hexdigest(self):
+        return sm3_hash_raw(self._buffer.copy())
 
-        Returns:
-            bytes: 哈希摘要
-        """
-        # 计算哈希
-        msg_list = bytes_to_list(self._buffer.copy())  # 复制，避免修改原始数据
-        digest_hex = sm3_hash_raw(msg_list)
-        return binascii.unhexlify(digest_hex)
-
-    def hexdigest(self) -> str:
-        """
-        返回当前数据的十六进制摘要
-
-        Returns:
-            str: 十六进制格式的哈希摘要
-        """
-        # 计算哈希
-        msg_list = bytes_to_list(self._buffer.copy())  # 复制，避免修改原始数据
-        return sm3_hash_raw(msg_list)
-
-    def copy(self) -> "SM3Hash":
-        """
-        返回哈希对象的副本
-
-        Returns:
-            SM3Hash: 当前哈希对象的副本
-        """
+    def copy(self):
         new_hash = SM3Hash()
         new_hash._buffer = bytearray(self._buffer)
         return new_hash
 
-    def reset(self) -> None:
-        """重置哈希对象的状态"""
+    def reset(self):
         self._buffer = bytearray()
 
+    def hash_data(self, data, encoding="utf-8"):
+        self.reset()
+        if isinstance(data, str):
+            data = data.encode(encoding)
+        self.update(data)
+        return self.digest()
 
-def sm3_hash(
-    data: Optional[Union[str, bytes, bytearray]] = None, encoding: str = "utf-8"
-) -> Union[bytes, SM3Hash]:
-    """
-    计算数据的SM3哈希值
+    def hash_file(self, filename):
+        self.reset()
+        with open(filename, "rb") as f:
+            chunk_size = 8192  # 8KB
+            while True:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                self.update(chunk)
+        return self.digest()
 
-    Args:
-        data: 要计算哈希的数据, 如果为None则返回哈希对象
-        encoding: 如果data是字符串, 指定编码方式
 
-    Returns:
-        Union[bytes, SM3Hash]: 如果提供了数据，返回哈希摘要；否则返回哈希对象
-    """
+def SM3(data=None, encoding="utf-8"):
+    """计算数据的SM3哈希值"""
     hash_obj = SM3Hash()
-    if data is not None:
-        return hash_obj.hash_data(data, encoding)
-    return hash_obj
-
-
-# 兼容性函数，与其他哈希算法保持一致的接口
-def SM3(
-    data: Optional[Union[str, bytes, bytearray]] = None, encoding: str = "utf-8"
-) -> Union[bytes, SM3Hash]:
-    """
-    计算数据的SM3哈希值
-
-    Args:
-        data: 要计算哈希的数据, 如果为None则返回哈希对象
-        encoding: 如果data是字符串, 指定编码方式
-
-    Returns:
-        Union[bytes, SM3Hash]: 如果提供了数据，返回哈希摘要；否则返回哈希对象
-    """
-    return sm3_hash(data, encoding)
+    if data is None:
+        return hash_obj
+    return hash_obj.hash_data(data, encoding)

@@ -107,6 +107,7 @@ __all__ = [
     "SignatureBase",
     "RSASignature",
     "ECDSASignature",
+    "EdDSASignature",
     "RSA_PKCS1v15Signature",
     "RSA_PSSSignature",
     "SignatureFactory",

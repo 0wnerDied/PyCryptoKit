@@ -10,6 +10,7 @@ from typing import Dict, Type, Any, List, Tuple
 from .base import SignatureBase
 from .rsa_sig import RSASignature, RSA_PKCS1v15Signature, RSA_PSSSignature
 from .ecdsa_sig import ECDSASignature
+from .eddsa_sig import EdDSASignature
 
 # 算法注册表
 # 格式: {算法名称: (算法类, 描述, 默认参数)}
@@ -28,6 +29,11 @@ SIGNATURE_ALGORITHMS: Dict[str, Tuple[Type[SignatureBase], str, Dict[str, Any]]]
         ECDSASignature,
         "ECDSA 椭圆曲线数字签名算法",
         {"curve": "SECP256R1", "hash_algorithm": "SHA256"},
+    ),
+    "EdDSA": (
+        EdDSASignature,
+        "EdDSA 爱德华兹曲线数字签名算法(Ed25519)",
+        {},
     ),
 }
 
@@ -79,6 +85,7 @@ def sign(
     # 执行签名
     return signature_algo.sign(data=data, private_key=key, password=password, **kwargs)
 
+
 def verify_signature(
     data: bytes, signature: bytes, key: bytes, algorithm: str, **kwargs
 ) -> bool:
@@ -99,7 +106,9 @@ def verify_signature(
     signature_algo = create_signature(algorithm=algorithm, **kwargs)
 
     # 执行验证
-    return signature_algo.verify(data=data, signature=signature, public_key=key, **kwargs)
+    return signature_algo.verify(
+        data=data, signature=signature, public_key=key, **kwargs
+    )
 
 
 def list_algorithms() -> List[str]:
@@ -135,6 +144,7 @@ __all__ = [
     "RSA_PKCS1v15Signature",
     "RSA_PSSSignature",
     "ECDSASignature",
+    "EdDSASignature"
     "SignatureFactory",
     "create_signature",
     "list_algorithms",

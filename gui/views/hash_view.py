@@ -214,16 +214,11 @@ class HashView(QWidget):
         try:
             # 获取文件状态
             file_stats = os.stat(file_path)
-
-            # 获取文件大小
             size_bytes = file_stats.st_size
             size_str = self.format_file_size(size_bytes)
-
-            # 构建文件信息文本
-            info_text = f"文件名: {os.path.basename(file_path)}\n"
-            info_text += f"大小: {size_str}\n"
-
-            self.file_info.setText(info_text)
+            self.file_info.setText(
+                f"文件名: {os.path.basename(file_path)}\n大小: {size_str}"
+            )
         except Exception as e:
             self.file_info.setText(f"无法获取文件信息: {str(e)}")
 
@@ -251,10 +246,9 @@ class HashView(QWidget):
                 if algorithm in SECURE_ALGORITHMS
                 else "不安全（已过时，仅用于兼容）"
             )
-            description = info.get("description", "")
-
-            info_text = f"算法: {algorithm}\n安全性: {is_secure}\n描述: {description}"
-            self.algo_info.setText(info_text)
+            self.algo_info.setText(
+                f"算法: {algorithm}\n安全性: {is_secure}\n描述: {info.get('description', '')}"
+            )
         except Exception as e:
             self.algo_info.setText(f"无法获取算法信息: {str(e)}")
 
@@ -274,28 +268,26 @@ class HashView(QWidget):
                     self.result.setText("请输入要计算哈希的文本")
                     return
 
-                # 处理十六进制输入
-                if self.hex_input_check.isChecked():
-                    try:
+                try:
+                    # 处理十六进制输入
+                    if self.hex_input_check.isChecked():
                         # 移除所有空白字符
                         text = "".join(text.split())
                         # 转换十六进制为字节
                         data = bytes.fromhex(text)
-                    except ValueError as e:
-                        self.result.setText(f"十六进制格式错误: {str(e)}")
-                        return
-                else:
-                    # 使用选定的编码
-                    encoding = self.encoding_combo.currentText()
-                    try:
-                        data = text.encode(encoding)
-                    except UnicodeEncodeError as e:
-                        self.result.setText(f"编码错误: {str(e)}")
-                        return
+                        self.last_result = hash_obj.hash_data(data).hex()
+                    else:
+                        # 使用选定的编码
+                        encoding = self.encoding_combo.currentText()
+                        self.last_result = hash_obj.hash_data(text, encoding).hex()
 
-                hash_obj.update(data)
-                self.last_result = hash_obj.hexdigest()
-                self.update_result_format()
+                    self.update_result_format()
+                except ValueError as e:
+                    self.result.setText(f"十六进制格式错误: {str(e)}")
+                    return
+                except UnicodeEncodeError as e:
+                    self.result.setText(f"编码错误: {str(e)}")
+                    return
 
             else:  # 文件模式
                 file_path = self.file_path.text()
@@ -304,11 +296,8 @@ class HashView(QWidget):
                     return
 
                 try:
-                    with open(file_path, "rb") as f:
-                        while chunk := f.read(8192):  # 分块读取大文件
-                            hash_obj.update(chunk)
-
-                    self.last_result = hash_obj.hexdigest()
+                    # 直接使用 hash_file 方法替代手动实现的文件读取逻辑
+                    self.last_result = hash_obj.hash_file(file_path).hex()
                     self.update_result_format()
                 except Exception as e:
                     self.result.setText(f"文件读取错误: {str(e)}")

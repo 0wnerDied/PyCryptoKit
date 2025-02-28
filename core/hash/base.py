@@ -2,10 +2,9 @@
 基础哈希接口定义
 """
 
-import hmac
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Union, BinaryIO
+from typing import Union
 
 
 class HashBase(ABC):
@@ -126,126 +125,3 @@ class HashBase(ABC):
             return self.digest()
         except IOError as e:
             raise IOError(f"读取文件时出错: {e}")
-
-    def hash_stream(self, stream: BinaryIO, chunk_size: int = 8192) -> bytes:
-        """
-        计算流的哈希值
-
-        Args:
-            stream: 二进制流对象
-            chunk_size: 每次读取的块大小
-
-        Returns:
-            bytes: 哈希摘要
-
-        Raises:
-            TypeError: 如果stream不是二进制流
-            IOError: 如果读取流时出错
-            ValueError: 如果chunk_size小于等于0
-        """
-        # 检查参数
-        if not hasattr(stream, "read") or not callable(stream.read):
-            raise TypeError("stream必须是可读的二进制流对象")
-
-        if chunk_size <= 0:
-            raise ValueError("chunk_size必须大于0")
-
-        self.reset()
-        try:
-            while chunk := stream.read(chunk_size):
-                self.update(chunk)
-            return self.digest()
-        except IOError as e:
-            raise IOError(f"读取流时出错: {e}")
-
-    def verify(
-        self,
-        data: Union[str, bytes, bytearray],
-        expected_digest: Union[str, bytes, bytearray],
-        encoding: str = "utf-8",
-    ) -> bool:
-        """
-        验证数据的哈希值是否匹配预期摘要
-
-        Args:
-            data: 要验证的数据
-            expected_digest: 预期的哈希摘要(十六进制字符串或字节)
-            encoding: 如果data是字符串, 指定编码方式
-
-        Returns:
-            bool: 如果哈希值匹配则返回True, 否则返回False
-
-        Raises:
-            TypeError: 如果数据类型不受支持
-            ValueError: 如果expected_digest格式无效
-        """
-        try:
-            actual_digest = self.hash_data(data, encoding)
-        except (TypeError, UnicodeError) as e:
-            raise TypeError(f"验证数据失败: {e}")
-
-        # 处理预期摘要
-        if isinstance(expected_digest, str):
-            # 如果是十六进制字符串，转换为字节
-            try:
-                # 检查是否是有效的十六进制字符串
-                if not all(c in "0123456789abcdefABCDEF" for c in expected_digest):
-                    raise ValueError("无效的十六进制摘要字符串")
-                expected_bytes = bytes.fromhex(expected_digest)
-            except ValueError as e:
-                raise ValueError(f"无效的十六进制摘要: {e}")
-
-            # 使用安全比较
-            return hmac.compare_digest(actual_digest, expected_bytes)
-        elif isinstance(expected_digest, (bytes, bytearray)):
-            # 直接比较字节，使用安全比较
-            return hmac.compare_digest(actual_digest, expected_digest)
-        else:
-            raise TypeError(f"不支持的摘要类型: {type(expected_digest).__name__}")
-
-    def verify_file(
-        self,
-        file_path: Union[str, Path],
-        expected_digest: Union[str, bytes, bytearray],
-        chunk_size: int = 8192,
-    ) -> bool:
-        """
-        验证文件的哈希值是否匹配预期摘要
-
-        Args:
-            file_path: 文件路径
-            expected_digest: 预期的哈希摘要(十六进制字符串或字节)
-            chunk_size: 每次读取的块大小
-
-        Returns:
-            bool: 如果哈希值匹配则返回True, 否则返回False
-
-        Raises:
-            FileNotFoundError: 如果文件不存在
-            IOError: 如果读取文件时出错
-            TypeError: 如果expected_digest类型不受支持
-            ValueError: 如果expected_digest格式无效或chunk_size无效
-        """
-        try:
-            actual_digest = self.hash_file(file_path, chunk_size)
-        except (FileNotFoundError, IOError, ValueError) as e:
-            raise type(e)(f"验证文件失败: {e}")
-
-        # 处理预期摘要
-        if isinstance(expected_digest, str):
-            # 如果是十六进制字符串，转换为字节
-            try:
-                # 检查是否是有效的十六进制字符串
-                if not all(c in "0123456789abcdefABCDEF" for c in expected_digest):
-                    raise ValueError("无效的十六进制摘要字符串")
-                expected_bytes = bytes.fromhex(expected_digest)
-            except ValueError as e:
-                raise ValueError(f"无效的十六进制摘要: {e}")
-
-            # 使用安全比较
-            return hmac.compare_digest(actual_digest, expected_bytes)
-        elif isinstance(expected_digest, (bytes, bytearray)):
-            # 直接比较字节，使用安全比较
-            return hmac.compare_digest(actual_digest, expected_digest)
-        else:
-            raise TypeError(f"不支持的摘要类型: {type(expected_digest).__name__}")

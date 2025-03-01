@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QRadioButton,
     QCheckBox,
     QApplication,
+    QMessageBox,
 )
 import os
 
@@ -57,8 +58,8 @@ class HashView(QWidget):
             self.algo_combo.addItem(algo)
 
         # 默认选择 SHA-256
-        if "SHA256" in self.algorithms:
-            index = self.algo_combo.findText("SHA256")
+        if "SHA-256" in self.algorithms:
+            index = self.algo_combo.findText("SHA-256")
             if index >= 0:
                 self.algo_combo.setCurrentIndex(index)
 
@@ -173,7 +174,7 @@ class HashView(QWidget):
         self.result.setReadOnly(True)
         result_layout.addWidget(self.result)
 
-        # 显示格式选项
+        # 显示格式选项 - 只保留大写显示
         format_layout = QHBoxLayout()
         self.uppercase_check = QCheckBox("大写显示")
         self.uppercase_check.toggled.connect(self.update_result_format)
@@ -184,7 +185,7 @@ class HashView(QWidget):
         layout.addWidget(result_group)
 
         # 保存最后计算的结果
-        self.last_result = ""
+        self.last_result = b""
 
         self.setLayout(layout)
 
@@ -256,7 +257,7 @@ class HashView(QWidget):
         algorithm = self.algo_combo.currentText()
 
         if not algorithm:
-            self.result.setText("请选择有效的哈希算法")
+            QMessageBox.warning(self, "错误", "请选择有效的哈希算法")
             return
 
         try:
@@ -265,7 +266,7 @@ class HashView(QWidget):
             if self.text_radio.isChecked():
                 text = self.text_input.toPlainText()
                 if not text:
-                    self.result.setText("请输入要计算哈希的文本")
+                    QMessageBox.warning(self, "错误", "请输入要计算哈希的文本")
                     return
 
                 try:
@@ -275,59 +276,64 @@ class HashView(QWidget):
                         text = "".join(text.split())
                         # 转换十六进制为字节
                         data = bytes.fromhex(text)
-                        self.last_result = hash_obj.hash_data(data).hex()
+                        self.last_result = hash_obj.hash_data(data)
                     else:
                         # 使用选定的编码
                         encoding = self.encoding_combo.currentText()
-                        self.last_result = hash_obj.hash_data(text, encoding).hex()
+                        self.last_result = hash_obj.hash_data(text, encoding)
 
                     self.update_result_format()
                 except ValueError as e:
-                    self.result.setText(f"十六进制格式错误: {str(e)}")
+                    QMessageBox.warning(self, "错误", f"十六进制格式错误: {str(e)}")
                     return
                 except UnicodeEncodeError as e:
-                    self.result.setText(f"编码错误: {str(e)}")
+                    QMessageBox.warning(self, "错误", f"编码错误: {str(e)}")
                     return
 
             else:  # 文件模式
                 file_path = self.file_path.text()
                 if not file_path:
-                    self.result.setText("请选择要计算哈希的文件")
+                    QMessageBox.warning(self, "错误", "请选择要计算哈希的文件")
                     return
 
                 try:
-                    # 直接使用 hash_file 方法替代手动实现的文件读取逻辑
-                    self.last_result = hash_obj.hash_file(file_path).hex()
+                    # 直接使用 hash_file 方法
+                    self.last_result = hash_obj.hash_file(file_path)
                     self.update_result_format()
                 except Exception as e:
-                    self.result.setText(f"文件读取错误: {str(e)}")
+                    QMessageBox.critical(self, "错误", f"文件读取错误: {str(e)}")
 
         except Exception as e:
-            self.result.setText(f"计算错误: {str(e)}")
+            QMessageBox.critical(self, "错误", f"计算错误: {str(e)}")
 
     def update_result_format(self):
-        if not self.last_result:
+        if not self.last_result or len(self.last_result) == 0:
             return
 
-        if self.uppercase_check.isChecked():
-            self.result.setText(self.last_result.upper())
-        else:
-            self.result.setText(self.last_result.lower())
+        try:
+            # 直接以十六进制格式显示哈希结果
+            result = self.last_result.hex()
+
+            # 如果选择了大写显示
+            if self.uppercase_check.isChecked():
+                result = result.upper()
+
+            self.result.setText(result)
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"格式转换错误: {str(e)}")
 
     def copy_result(self):
         result_text = self.result.toPlainText()
-        if (
-            result_text
-            and not result_text.startswith("请")
-            and not result_text.startswith("计算错误")
-        ):
+        if result_text:
             clipboard = QApplication.clipboard()
             clipboard.setText(result_text)
-            self.result.append("\n(已复制到剪贴板)")
+            QMessageBox.information(self, "复制成功", "哈希结果已复制到剪贴板")
+        else:
+            QMessageBox.warning(self, "复制失败", "没有可复制的哈希结果")
 
     def clear_fields(self):
         self.text_input.clear()
         self.file_path.clear()
         self.file_info.clear()
         self.result.clear()
-        self.last_result = ""
+        self.last_result = b""

@@ -706,7 +706,7 @@ class SymmetricView(QWidget):
         self.update_mode_options()
 
         # 流密码特殊处理
-        is_stream_cipher = algorithm in ["CHACHA20", "CHACHA20_POLY1305", "SALSA20"]
+        is_stream_cipher = algorithm in ["CHACHA20", "SALSA20"]
         if is_stream_cipher:
             self.mode_combo.setEnabled(False)
             self.padding_combo.setEnabled(False)
@@ -714,9 +714,6 @@ class SymmetricView(QWidget):
             self.gen_iv_btn.setEnabled(True)
             self.iv_hex_check.setEnabled(True)
             self.iv_b64_check.setEnabled(True)
-
-            # ChaCha20-Poly1305 支持关联数据
-            self.aad_input.setEnabled(algorithm == "CHACHA20_POLY1305")
 
     def update_mode_options(self):
         """根据选择的模式更新UI选项"""
@@ -781,16 +778,13 @@ class SymmetricView(QWidget):
         self.update_decrypt_mode_options()
 
         # 流密码特殊处理
-        is_stream_cipher = algorithm in ["CHACHA20", "CHACHA20_POLY1305", "SALSA20"]
+        is_stream_cipher = algorithm in ["CHACHA20", "SALSA20"]
         if is_stream_cipher:
             self.decrypt_mode_combo.setEnabled(False)
             self.decrypt_padding_combo.setEnabled(False)
             self.decrypt_iv_input.setEnabled(True)
             self.decrypt_iv_hex_check.setEnabled(True)
             self.decrypt_iv_b64_check.setEnabled(True)
-
-            # ChaCha20-Poly1305 支持关联数据
-            self.decrypt_aad_input.setEnabled(algorithm == "CHACHA20_POLY1305")
 
     def update_decrypt_mode_options(self):
         """根据选择的解密模式更新UI选项"""
@@ -895,7 +889,7 @@ class SymmetricView(QWidget):
                 key_size = key_size_bits // 8
             elif algorithm == "SM4":
                 key_size = 16
-            elif algorithm in ["CHACHA20", "CHACHA20_POLY1305", "SALSA20"]:
+            elif algorithm in ["CHACHA20", "SALSA20"]:
                 key_size = 32
             else:
                 key_size = 32
@@ -928,7 +922,7 @@ class SymmetricView(QWidget):
                     iv_size = 12
                 else:
                     iv_size = 16
-            elif algorithm in ["CHACHA20", "CHACHA20_POLY1305"]:
+            elif algorithm == "CHACHA20":
                 iv_size = 12
             elif algorithm == "SALSA20":
                 iv_size = 8

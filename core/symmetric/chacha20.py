@@ -1,4 +1,4 @@
-from Crypto.Cipher import ChaCha20, ChaCha20_Poly1305
+from Crypto.Cipher import ChaCha20
 from typing import Union, Optional
 import os
 
@@ -6,19 +6,10 @@ from .base import SymmetricCipher
 
 
 class ChaCha20Cipher(SymmetricCipher):
-    """ChaCha20 和 ChaCha20-Poly1305 加密实现类"""
+    """ChaCha20 加密实现类"""
 
-    def __init__(
-        self,
-        use_poly1305: bool = False,
-    ):
-        """
-        初始化 ChaCha20 加密器
-
-        Args:
-            use_poly1305: 是否使用 Poly1305 认证 (ChaCha20-Poly1305)
-        """
-        self.use_poly1305 = use_poly1305
+    def __init__(self):
+        """初始化 ChaCha20 加密器"""
         self.key_length = 32  # ChaCha20 使用 256 位密钥 (32 字节)
         self.nonce_length = 12
 
@@ -30,21 +21,18 @@ class ChaCha20Cipher(SymmetricCipher):
         **kwargs,
     ) -> bytes:
         """
-        ChaCha20/ChaCha20-Poly1305 加密
+        ChaCha20 加密
 
         Args:
             plaintext: 明文
             key: 密钥 (32 字节)
             nonce: 随机数 (12 字节)
-                   如果为 None，则自动生成
+                   如果为 None, 则自动生成
             **kwargs:
                 - counter: ChaCha20 初始计数值 (默认为 0)
-                - associated_data: ChaCha20-Poly1305 的附加认证数据
 
         Returns:
             bytes: 加密后的密文
-                  对于 ChaCha20: nonce (12 bytes) + ciphertext
-                  对于 ChaCha20-Poly1305: nonce (12 bytes) + tag (16 bytes) + ciphertext
         """
         # 处理输入
         if isinstance(plaintext, str):
@@ -65,38 +53,20 @@ class ChaCha20Cipher(SymmetricCipher):
             nonce = nonce[: self.nonce_length]
 
         try:
-            if self.use_poly1305:
-                # ChaCha20-Poly1305 模式
-                cipher = ChaCha20_Poly1305.new(key=key, nonce=nonce)
+            # 获取计数器值
+            counter = kwargs.get("counter", 0)  # 默认计数器值为 0
 
-                # 处理附加认证数据
-                associated_data = kwargs.get("associated_data")
-                if associated_data is not None:
-                    if isinstance(associated_data, str):
-                        associated_data = associated_data.encode("utf-8")
-                    cipher.update(associated_data)
+            # 在 PyCryptodome 中，counter 参数需要通过 cipher.seek() 设置
+            cipher = ChaCha20.new(key=key, nonce=nonce)
 
-                # 加密并生成认证标签
-                ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+            # 如果计数器不是0，使用 seek() 设置位置
+            if counter > 0:
+                cipher.seek(counter)
 
-                # 返回 nonce + tag + ciphertext
-                return b"".join([tag, ciphertext])
-            else:
-                # 普通 ChaCha20 模式
-                # 获取计数器值，但不传递给 ChaCha20.new()
-                counter = kwargs.get("counter", 0)  # 默认计数器值为 0
+            ciphertext = cipher.encrypt(plaintext)
 
-                # 在 PyCryptodome 中，counter 参数需要通过 cipher.seek() 设置
-                cipher = ChaCha20.new(key=key, nonce=nonce)
-
-                # 如果计数器不是0，使用 seek() 设置位置
-                if counter > 0:
-                    cipher.seek(counter)
-
-                ciphertext = cipher.encrypt(plaintext)
-
-                # 返回 nonce + ciphertext
-                return ciphertext
+            # 返回密文
+            return ciphertext
 
         except ValueError as e:
             raise ValueError(f"ChaCha20 加密参数错误: {str(e)}")
@@ -109,88 +79,47 @@ class ChaCha20Cipher(SymmetricCipher):
         self,
         ciphertext: bytes,
         key: Union[str, bytes],
-        nonce: Optional[Union[str, bytes]] = None,
+        nonce: Union[str, bytes],
         **kwargs,
     ) -> bytes:
         """
-        ChaCha20/ChaCha20-Poly1305 解密
+        ChaCha20 解密
 
         Args:
             ciphertext: 密文
             key: 密钥 (32 字节)
-            nonce: 随机数 (如果已包含在密文中则可为 None)
+            nonce: 随机数 (12 字节)
             **kwargs:
                 - counter: ChaCha20 初始计数值 (默认为 0)
-                - associated_data: ChaCha20-Poly1305 的附加认证数据
 
         Returns:
             bytes: 解密后的明文
         """
         key = self.normalize_key(key, self.key_length)
 
+        # 处理 nonce
+        if isinstance(nonce, str):
+            nonce = nonce.encode("utf-8")
+
+        # 确保 nonce 长度正确
+        if len(nonce) < self.nonce_length:
+            nonce = nonce.ljust(self.nonce_length, b"\0")
+        else:
+            nonce = nonce[: self.nonce_length]
+
         try:
-            if self.use_poly1305:
-                # ChaCha20-Poly1305 模式
-                min_length = self.nonce_length + 16  # nonce + tag
-                if len(ciphertext) < min_length:
-                    raise ValueError(
-                        f"ChaCha20-Poly1305 密文格式不正确，长度至少为 {min_length} 字节"
-                    )
+            # 获取计数器值
+            counter = kwargs.get("counter", 0)  # 默认计数器值为 0
 
-                if nonce is None:
-                    # 从密文中提取 nonce 和 tag
-                    nonce = ciphertext[: self.nonce_length]
-                    tag = ciphertext[self.nonce_length : self.nonce_length + 16]
-                    ciphertext = ciphertext[self.nonce_length + 16 :]
-                else:
-                    # 使用提供的 nonce，从密文中提取 tag
-                    if isinstance(nonce, str):
-                        nonce = nonce.encode("utf-8")
-                        nonce = nonce[: self.nonce_length].ljust(
-                            self.nonce_length, b"\0"
-                        )
-                    tag = ciphertext[:16]
-                    ciphertext = ciphertext[16:]
+            # 创建解密器
+            cipher = ChaCha20.new(key=key, nonce=nonce)
 
-                cipher = ChaCha20_Poly1305.new(key=key, nonce=nonce)
+            # 如果计数器不是0，使用 seek() 设置位置
+            if counter > 0:
+                cipher.seek(counter)
 
-                # 处理附加认证数据
-                associated_data = kwargs.get("associated_data")
-                if associated_data is not None:
-                    if isinstance(associated_data, str):
-                        associated_data = associated_data.encode("utf-8")
-                    cipher.update(associated_data)
-
-                # 解密并验证
-                try:
-                    plaintext = cipher.decrypt_and_verify(ciphertext, tag)
-                    return plaintext
-                except ValueError:
-                    raise ValueError(
-                        "ChaCha20-Poly1305 认证标签验证失败，数据可能被篡改"
-                    )
-            else:
-                # 普通 ChaCha20 模式
-                if nonce is None:
-                    # 从密文中提取 nonce
-                    nonce = ciphertext[: self.nonce_length]
-                    ciphertext = ciphertext[self.nonce_length :]
-                elif isinstance(nonce, str):
-                    nonce = nonce.encode("utf-8")
-                    nonce = nonce[: self.nonce_length].ljust(self.nonce_length, b"\0")
-
-                # 获取计数器值，但不传递给 ChaCha20.new()
-                counter = kwargs.get("counter", 0)  # 默认计数器值为 0
-
-                # 创建解密器
-                cipher = ChaCha20.new(key=key, nonce=nonce)
-
-                # 如果计数器不是0，使用 seek() 设置位置
-                if counter > 0:
-                    cipher.seek(counter)
-
-                plaintext = cipher.decrypt(ciphertext)
-                return plaintext
+            plaintext = cipher.decrypt(ciphertext)
+            return plaintext
 
         except ValueError as e:
             raise ValueError(f"ChaCha20 解密参数错误: {str(e)}")

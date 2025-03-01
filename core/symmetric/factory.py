@@ -62,9 +62,7 @@ class SymmetricFactory:
         elif algorithm == Algorithm.SM4:
             return SM4Cipher(mode=mode, padding=padding)
         elif algorithm == Algorithm.CHACHA20:
-            return ChaCha20Cipher(use_poly1305=False)
-        elif algorithm == Algorithm.CHACHA20_POLY1305:
-            return ChaCha20Cipher(use_poly1305=True)
+            return ChaCha20Cipher()
         elif algorithm == Algorithm.SALSA20:
             return Salsa20Cipher()
         else:

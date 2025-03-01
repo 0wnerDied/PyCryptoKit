@@ -14,7 +14,9 @@ from PySide6.QtWidgets import (
     QApplication,
     QTabWidget,
     QMessageBox,
+    QScrollArea,
 )
+from PySide6.QtCore import Qt
 import os
 import base64
 
@@ -39,20 +41,33 @@ class SymmetricView(QWidget):
 
         # 创建选项卡
         self.tabs = QTabWidget()
-        self.encrypt_tab = QWidget()
-        self.decrypt_tab = QWidget()
 
-        self.setup_encrypt_tab()
-        self.setup_decrypt_tab()
+        # 创建内容容器
+        self.encrypt_content = QWidget()
+        self.decrypt_content = QWidget()
 
-        self.tabs.addTab(self.encrypt_tab, "加密")
-        self.tabs.addTab(self.decrypt_tab, "解密")
+        # 设置加密和解密的内容
+        self.setup_encrypt_content()
+        self.setup_decrypt_content()
+
+        # 创建滚动区域
+        encrypt_scroll = QScrollArea()
+        encrypt_scroll.setWidgetResizable(True)
+        encrypt_scroll.setWidget(self.encrypt_content)
+
+        decrypt_scroll = QScrollArea()
+        decrypt_scroll.setWidgetResizable(True)
+        decrypt_scroll.setWidget(self.decrypt_content)
+
+        # 将滚动区域添加到标签页
+        self.tabs.addTab(encrypt_scroll, "加密")
+        self.tabs.addTab(decrypt_scroll, "验证")
 
         layout.addWidget(self.tabs)
         self.setLayout(layout)
 
-    def setup_encrypt_tab(self):
-        layout = QVBoxLayout()
+    def setup_encrypt_content(self):
+        layout = QVBoxLayout(self.encrypt_content)
 
         # 算法选择
         algo_group = QGroupBox("加密算法")
@@ -325,13 +340,11 @@ class SymmetricView(QWidget):
         # 保存最后计算的结果
         self.last_result = b""
 
-        self.encrypt_tab.setLayout(layout)
-
         # 初始化算法选项
         self.update_algorithm_options()
 
-    def setup_decrypt_tab(self):
-        layout = QVBoxLayout()
+    def setup_decrypt_content(self):
+        layout = QVBoxLayout(self.decrypt_content)
 
         # 算法选择
         algo_group = QGroupBox("解密算法")
@@ -599,7 +612,7 @@ class SymmetricView(QWidget):
         # 保存最后计算的结果
         self.last_decrypt_result = ""
 
-        self.decrypt_tab.setLayout(layout)
+        self.decrypt_content.setLayout(layout)
 
         # 初始化算法选项
         self.update_decrypt_algorithm_options()

@@ -33,20 +33,12 @@ class SM4Cipher(SymmetricCipher):
         if mode_value == Mode.ECB:
             return modes.ECB()
         elif mode_value == Mode.CBC:
-            if not iv or len(iv) != 16:
-                raise ValueError("CBC模式需要16字节的IV")
             return modes.CBC(iv)
         elif mode_value == Mode.CTR:
-            if not iv or len(iv) != 16:
-                raise ValueError("CTR模式需要16字节的IV")
             return modes.CTR(iv)
         elif mode_value == Mode.OFB:
-            if not iv or len(iv) != 16:
-                raise ValueError("OFB模式需要16字节的IV")
             return modes.OFB(iv)
         elif mode_value == Mode.CFB:
-            if not iv or len(iv) != 16:
-                raise ValueError("CFB模式需要16字节的IV")
             return modes.CFB(iv)
         else:
             raise ValueError(f"不支持的加密模式: {mode_value}")
@@ -68,9 +60,9 @@ class SM4Cipher(SymmetricCipher):
 
         elif self.padding == Padding.ZERO:
             padding_length = self.block_size - (len(data) % self.block_size)
-            if padding_length == self.block_size:  # 如果数据长度正好是块大小的整数倍
-                return data
-            return data + b"\x00" * padding_length
+            if padding_length != self.block_size:  # 只有在需要填充时才填充
+                return data + b"\x00" * padding_length
+            return data
 
     def _unpad_data(self, data: bytes) -> bytes:
         """根据填充模式对数据进行去填充"""
@@ -78,17 +70,14 @@ class SM4Cipher(SymmetricCipher):
             return data
 
         elif self.padding == Padding.PKCS7:
-            if not data:
-                return data
-
             padding_length = data[-1]
             # 验证填充
             if padding_length > 0 and padding_length <= self.block_size:
-                if len(data) >= padding_length:
-                    padding = data[-padding_length:]
-                    if all(p == padding_length for p in padding):
-                        return data[:-padding_length]
-            # 如果验证失败，返回原始数据
+                padding = data[-padding_length:]
+                if all(p == padding_length for p in padding):
+                    return data[:-padding_length]
+                else:
+                    raise ValueError("PKCS7填充验证失败")
             return data
 
         elif self.padding == Padding.ZERO:
@@ -125,17 +114,9 @@ class SM4Cipher(SymmetricCipher):
             if iv is None:
                 iv = os.urandom(16)  # 生成随机IV
             elif isinstance(iv, str):
-                try:
-                    iv = iv.encode("utf-8")
-                except:
-                    raise ValueError("IV必须是有效的字符串或字节")
-
+                iv = iv.encode("utf-8")
             # 确保IV长度为16字节
-            if len(iv) < 16:
-                iv = iv.ljust(16, b"\0")
-            elif len(iv) > 16:
-                iv = iv[:16]
-
+            iv = iv[:16].ljust(16, b"\0")
             original_iv = iv  # 保存原始IV用于返回
 
         # 填充处理
@@ -176,30 +157,17 @@ class SM4Cipher(SymmetricCipher):
         Returns:
             bytes: 解密后的明文
         """
-        if not ciphertext:
-            return b""
-
         key = self.normalize_key(key, self.key_length)
 
         # 处理IV
         if self.mode != Mode.ECB:
             if iv is None:
-                # 确保密文长度足够提取IV
-                if len(ciphertext) < 16:
-                    raise ValueError("密文长度不足，无法提取IV")
                 # 从密文中提取IV
                 iv, ciphertext = ciphertext[:16], ciphertext[16:]
             elif isinstance(iv, str):
-                try:
-                    iv = iv.encode("utf-8")
-                except:
-                    raise ValueError("IV必须是有效的字符串或字节")
-
+                iv = iv.encode("utf-8")
                 # 确保IV长度为16字节
-                if len(iv) < 16:
-                    iv = iv.ljust(16, b"\0")
-                elif len(iv) > 16:
-                    iv = iv[:16]
+                iv = iv[:16].ljust(16, b"\0")
 
         # 创建解密器
         try:

@@ -149,11 +149,6 @@ class SM4Cipher(SymmetricCipher):
         if self.padding != Padding.NONE:  # 只要不是NONE，都进行填充
             padded_plaintext = self._pad_data(plaintext)
         else:
-            # 无填充模式
-            if len(plaintext) % self.block_size != 0:
-                raise ValueError(
-                    f"无填充模式下，数据长度必须是{self.block_size}的整数倍"
-                )
             padded_plaintext = plaintext
 
         # 创建加密器

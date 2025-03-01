@@ -146,11 +146,15 @@ class SM4Cipher(SymmetricCipher):
             elif len(used_iv) > 16:
                 used_iv = used_iv[:16]
 
-        # 填充处理
-        if self.mode in [Mode.ECB, Mode.CBC]:  # 只有这些模式需要填充
+        if self.padding != Padding.NONE:  # 只要不是NONE，都进行填充
             padded_plaintext = self._pad_data(plaintext)
         else:
-            padded_plaintext = plaintext  # 其他模式不需要填充
+            # 无填充模式
+            if len(plaintext) % self.block_size != 0:
+                raise ValueError(
+                    f"无填充模式下，数据长度必须是{self.block_size}的整数倍"
+                )
+            padded_plaintext = plaintext
 
         # 创建加密器
         try:
@@ -184,7 +188,7 @@ class SM4Cipher(SymmetricCipher):
         ciphertext: bytes,
         key: Union[str, bytes],
         iv: Optional[Union[str, bytes]] = None,
-        iv_included: bool = False,  # 新增参数：密文中是否包含IV
+        iv_included: bool = False,
         **kwargs,
     ) -> bytes:
         """
@@ -272,8 +276,7 @@ class SM4Cipher(SymmetricCipher):
             decryptor = cipher.decryptor()
             plaintext = decryptor.update(actual_ciphertext) + decryptor.finalize()
 
-            # 去除填充
-            if self.mode in [Mode.ECB, Mode.CBC]:
+            if self.padding != Padding.NONE:  # 只要不是NONE填充，都需要去填充
                 plaintext = self._unpad_data(plaintext)
 
             return plaintext

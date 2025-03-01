@@ -14,7 +14,9 @@ from PySide6.QtWidgets import (
     QApplication,
     QTabWidget,
     QMessageBox,
+    QScrollArea,
 )
+from PySide6.QtCore import Qt
 import os
 import base64
 import binascii
@@ -37,20 +39,33 @@ class SignatureView(QWidget):
 
         # 创建标签页
         self.tab_widget = QTabWidget()
-        self.sign_tab = QWidget()
-        self.verify_tab = QWidget()
 
-        self.setup_sign_tab()
-        self.setup_verify_tab()
+        # 创建内容容器
+        self.sign_content = QWidget()
+        self.verify_content = QWidget()
 
-        self.tab_widget.addTab(self.sign_tab, "签名")
-        self.tab_widget.addTab(self.verify_tab, "验证")
+        # 设置签名和验证的内容
+        self.setup_sign_content()
+        self.setup_verify_content()
+
+        # 创建滚动区域
+        sign_scroll = QScrollArea()
+        sign_scroll.setWidgetResizable(True)
+        sign_scroll.setWidget(self.sign_content)
+
+        verify_scroll = QScrollArea()
+        verify_scroll.setWidgetResizable(True)
+        verify_scroll.setWidget(self.verify_content)
+
+        # 将滚动区域添加到标签页
+        self.tab_widget.addTab(sign_scroll, "签名")
+        self.tab_widget.addTab(verify_scroll, "验证")
 
         layout.addWidget(self.tab_widget)
         self.setLayout(layout)
 
-    def setup_sign_tab(self):
-        layout = QVBoxLayout()
+    def setup_sign_content(self):
+        layout = QVBoxLayout(self.sign_content)
 
         # 算法选择
         algo_group = QGroupBox("签名算法")
@@ -282,10 +297,8 @@ class SignatureView(QWidget):
         # 保存最后生成的签名
         self.last_signature = b""
 
-        self.sign_tab.setLayout(layout)
-
-    def setup_verify_tab(self):
-        layout = QVBoxLayout()
+    def setup_verify_content(self):
+        layout = QVBoxLayout(self.verify_content)
 
         # 算法选择
         algo_group = QGroupBox("签名算法")
@@ -373,18 +386,18 @@ class SignatureView(QWidget):
         key_group.setLayout(key_layout)
         layout.addWidget(key_group)
 
-        # 输入选择
-        input_group = QGroupBox("待验证数据")
-        input_layout = QVBoxLayout()
+        # 数据选择
+        data_group = QGroupBox("原始数据")
+        data_layout = QVBoxLayout()
 
-        # 输入方式选择
-        input_type_layout = QHBoxLayout()
+        # 数据输入方式选择
+        data_type_layout = QHBoxLayout()
         self.verify_text_radio = QRadioButton("文本输入")
         self.verify_file_radio = QRadioButton("文件输入")
         self.verify_text_radio.setChecked(True)
-        input_type_layout.addWidget(self.verify_text_radio)
-        input_type_layout.addWidget(self.verify_file_radio)
-        input_layout.addLayout(input_type_layout)
+        data_type_layout.addWidget(self.verify_text_radio)
+        data_type_layout.addWidget(self.verify_file_radio)
+        data_layout.addLayout(data_type_layout)
 
         # 文本输入相关控件
         self.verify_text_widget = QWidget()
@@ -392,7 +405,7 @@ class SignatureView(QWidget):
         text_layout.setContentsMargins(0, 0, 0, 0)
 
         self.verify_text_input = QTextEdit()
-        self.verify_text_input.setPlaceholderText("在此输入要验证的文本")
+        self.verify_text_input.setPlaceholderText("在此输入要验证的原始文本")
         text_layout.addWidget(self.verify_text_input)
 
         # 编码选项
@@ -409,7 +422,7 @@ class SignatureView(QWidget):
         encoding_layout.addWidget(self.verify_hex_input_check)
         text_layout.addLayout(encoding_layout)
 
-        input_layout.addWidget(self.verify_text_widget)
+        data_layout.addWidget(self.verify_text_widget)
 
         # 文件输入相关控件
         self.verify_file_widget = QWidget()
@@ -419,7 +432,7 @@ class SignatureView(QWidget):
         # 文件选择
         file_input_layout = QHBoxLayout()
         self.verify_file_path = QLineEdit()
-        self.verify_file_path.setPlaceholderText("选择要验证的文件")
+        self.verify_file_path.setPlaceholderText("选择要验证的原始文件")
         self.verify_file_path.textChanged.connect(self.on_verify_file_path_changed)
         file_input_layout.addWidget(self.verify_file_path)
         self.verify_browse_btn = QPushButton("浏览...")
@@ -432,7 +445,7 @@ class SignatureView(QWidget):
         self.verify_file_info.setWordWrap(True)
         file_layout.addWidget(self.verify_file_info)
 
-        input_layout.addWidget(self.verify_file_widget)
+        data_layout.addWidget(self.verify_file_widget)
 
         # 连接单选按钮信号
         self.verify_text_radio.toggled.connect(self.toggle_verify_input_mode)
@@ -441,65 +454,64 @@ class SignatureView(QWidget):
         # 初始状态
         self.verify_file_widget.hide()
 
-        input_group.setLayout(input_layout)
-        layout.addWidget(input_group)
+        data_group.setLayout(data_layout)
+        layout.addWidget(data_group)
 
         # 签名输入
-        signature_group = QGroupBox("签名")
+        signature_group = QGroupBox("签名数据")
         signature_layout = QVBoxLayout()
 
         # 签名输入方式选择
-        sig_type_layout = QHBoxLayout()
-        self.sig_text_radio = QRadioButton("文本输入")
-        self.sig_file_radio = QRadioButton("文件输入")
-        self.sig_text_radio.setChecked(True)
-        sig_type_layout.addWidget(self.sig_text_radio)
-        sig_type_layout.addWidget(self.sig_file_radio)
-        signature_layout.addLayout(sig_type_layout)
+        signature_type_layout = QHBoxLayout()
+        self.signature_text_radio = QRadioButton("文本输入")
+        self.signature_file_radio = QRadioButton("文件输入")
+        self.signature_text_radio.setChecked(True)
+        signature_type_layout.addWidget(self.signature_text_radio)
+        signature_type_layout.addWidget(self.signature_file_radio)
+        signature_layout.addLayout(signature_type_layout)
 
         # 签名文本输入
-        self.sig_text_widget = QWidget()
-        sig_text_layout = QVBoxLayout(self.sig_text_widget)
-        sig_text_layout.setContentsMargins(0, 0, 0, 0)
+        self.signature_text_widget = QWidget()
+        signature_text_layout = QVBoxLayout(self.signature_text_widget)
+        signature_text_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.sig_input = QTextEdit()
-        self.sig_input.setPlaceholderText("在此输入签名 (Base64 或十六进制格式) ")
-        sig_text_layout.addWidget(self.sig_input)
+        self.signature_input = QTextEdit()
+        self.signature_input.setPlaceholderText("在此输入要验证的签名数据")
+        signature_text_layout.addWidget(self.signature_input)
 
-        # 签名格式选项
-        sig_format_layout = QHBoxLayout()
-        self.sig_base64_radio = QRadioButton("Base64 格式")
-        self.sig_hex_radio = QRadioButton("十六进制格式")
-        self.sig_base64_radio.setChecked(True)
-        sig_format_layout.addWidget(self.sig_base64_radio)
-        sig_format_layout.addWidget(self.sig_hex_radio)
-        sig_text_layout.addLayout(sig_format_layout)
+        # 签名格式选择
+        format_layout = QHBoxLayout()
+        format_layout.addWidget(QLabel("签名格式:"))
+        self.signature_format_combo = QComboBox()
+        self.signature_format_combo.addItems(["Base64", "十六进制"])
+        format_layout.addWidget(self.signature_format_combo)
+        signature_text_layout.addLayout(format_layout)
 
-        signature_layout.addWidget(self.sig_text_widget)
+        signature_layout.addWidget(self.signature_text_widget)
 
         # 签名文件输入
-        self.sig_file_widget = QWidget()
-        sig_file_layout = QVBoxLayout(self.sig_file_widget)
-        sig_file_layout.setContentsMargins(0, 0, 0, 0)
+        self.signature_file_widget = QWidget()
+        signature_file_layout = QVBoxLayout(self.signature_file_widget)
+        signature_file_layout.setContentsMargins(0, 0, 0, 0)
 
-        # 签名文件选择
-        sig_file_input_layout = QHBoxLayout()
-        self.sig_file_path = QLineEdit()
-        self.sig_file_path.setPlaceholderText("选择签名文件")
-        sig_file_input_layout.addWidget(self.sig_file_path)
-        self.sig_browse_btn = QPushButton("浏览...")
-        self.sig_browse_btn.clicked.connect(self.browse_sig_file)
-        sig_file_input_layout.addWidget(self.sig_browse_btn)
-        sig_file_layout.addLayout(sig_file_input_layout)
+        # 文件选择
+        signature_file_input_layout = QHBoxLayout()
+        self.signature_file_path = QLineEdit()
+        self.signature_file_path.setPlaceholderText("选择包含签名的文件")
+        signature_file_input_layout.addWidget(self.signature_file_path)
+        self.signature_browse_btn = QPushButton("浏览...")
+        self.signature_browse_btn.clicked.connect(self.browse_sig_file)
+        signature_file_input_layout.addWidget(self.signature_browse_btn)
+        signature_file_layout.addLayout(signature_file_input_layout)
 
-        signature_layout.addWidget(self.sig_file_widget)
+        signature_layout.addWidget(self.signature_file_widget)
 
         # 连接单选按钮信号
-        self.sig_text_radio.toggled.connect(self.toggle_sig_input_mode)
-        self.sig_file_radio.toggled.connect(self.toggle_sig_input_mode)
+        self.signature_text_radio.toggled.connect(self.toggle_sig_input_mode)
+        self.signature_file_radio.toggled.connect(self.toggle_sig_input_mode)
 
         # 初始状态
-        self.sig_file_widget.hide()
+        self.signature_file_widget.hide()
 
         signature_group.setLayout(signature_layout)
         layout.addWidget(signature_group)
@@ -517,16 +529,16 @@ class SignatureView(QWidget):
 
         layout.addLayout(btn_layout)
 
-        # 验证结果
+        # 结果显示
         result_group = QGroupBox("验证结果")
         result_layout = QVBoxLayout()
-        self.verify_result = QLabel('请点击"验证签名"按钮进行验证')
+        self.verify_result = QLabel()
         self.verify_result.setWordWrap(True)
+        self.verify_result.setAlignment(Qt.AlignCenter)
+        self.verify_result.setMinimumHeight(50)
         result_layout.addWidget(self.verify_result)
         result_group.setLayout(result_layout)
         layout.addWidget(result_group)
-
-        self.verify_tab.setLayout(layout)
 
     def update_sign_algorithm_info(self):
         """更新签名算法信息"""
@@ -604,12 +616,12 @@ class SignatureView(QWidget):
 
     def toggle_sig_input_mode(self, checked):
         """切换签名输入模式"""
-        if self.sig_text_radio.isChecked():
-            self.sig_text_widget.show()
-            self.sig_file_widget.hide()
+        if self.signature_text_radio.isChecked():
+            self.signature_text_widget.show()
+            self.signature_file_widget.hide()
         else:
-            self.sig_text_widget.hide()
-            self.sig_file_widget.show()
+            self.signature_text_widget.hide()
+            self.signature_file_widget.show()
 
     def browse_key_file(self):
         """浏览私钥文件"""

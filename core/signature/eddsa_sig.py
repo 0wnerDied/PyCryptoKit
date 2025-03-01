@@ -1,8 +1,6 @@
 from typing import Union, Tuple, Optional
-import os
 from Cryptodome.PublicKey import ECC
 from Cryptodome.Signature import eddsa
-from Cryptodome.Hash import SHA512, SHAKE256
 
 from .base import SignatureBase
 
@@ -95,52 +93,6 @@ class EdDSASignature(SignatureBase):
         except ValueError:
             return False
 
-    def save_key_pair(
-        self,
-        private_key,
-        public_key,
-        private_path: str,
-        public_path: str,
-        password: Optional[bytes] = None,
-    ) -> Tuple[str, str]:
-        """保存 EdDSA 密钥对到文件
-
-        Args:
-            private_key: EdDSA 私钥
-            public_key: EdDSA 公钥
-            private_path: 私钥保存路径
-            public_path: 公钥保存路径
-            password: 私钥加密密码，可选
-
-        Returns:
-            Tuple[str, str]: 保存的私钥和公钥路径
-        """
-        # 确保目录存在
-        os.makedirs(os.path.dirname(private_path), exist_ok=True)
-        os.makedirs(os.path.dirname(public_path), exist_ok=True)
-
-        # 序列化私钥
-        if password:
-            private_bytes = private_key.export_key(
-                format="PEM",
-                passphrase=password,
-                protection="PBKDF2WithHMAC-SHA1AndAES256-CBC",
-            )
-        else:
-            private_bytes = private_key.export_key(format="PEM")
-
-        # 序列化公钥
-        public_bytes = public_key.export_key(format="PEM")
-
-        # 写入文件
-        with open(private_path, "wb") as f:
-            f.write(private_bytes)
-
-        with open(public_path, "wb") as f:
-            f.write(public_bytes)
-
-        return private_path, public_path
-
     def load_private_key(self, path: str, password: Optional[bytes] = None):
         """从文件加载 EdDSA 私钥
 
@@ -185,60 +137,6 @@ class EdDSASignature(SignatureBase):
             )
 
         return public_key
-
-    def export_private_key(
-        self, private_key, password: Optional[bytes] = None
-    ) -> bytes:
-        """导出私钥为 PEM 格式
-
-        Args:
-            private_key: EdDSA 私钥对象
-            password: 加密密码，可选
-
-        Returns:
-            bytes: PEM 格式的私钥
-        """
-        if password:
-            return private_key.export_key(
-                format="PEM",
-                passphrase=password,
-                protection="PBKDF2WithHMAC-SHA1AndAES256-CBC",
-            )
-        else:
-            return private_key.export_key(format="PEM")
-
-    def export_public_key(self, public_key) -> bytes:
-        """导出公钥为 PEM 格式
-
-        Args:
-            public_key: EdDSA 公钥对象
-
-        Returns:
-            bytes: PEM 格式的公钥
-        """
-        return public_key.export_key(format="PEM")
-
-    def export_private_key_raw(self, private_key) -> bytes:
-        """导出私钥为原始字节格式（RFC8032）
-
-        Args:
-            private_key: EdDSA 私钥对象
-
-        Returns:
-            bytes: 原始格式的私钥
-        """
-        return private_key.export_key(format="raw")
-
-    def export_public_key_raw(self, public_key) -> bytes:
-        """导出公钥为原始字节格式（RFC8032）
-
-        Args:
-            public_key: EdDSA 公钥对象
-
-        Returns:
-            bytes: 原始格式的公钥
-        """
-        return public_key.export_key(format="raw")
 
     def import_private_key_raw(self, key_data: bytes):
         """从原始字节导入私钥（RFC8032）

@@ -44,23 +44,6 @@ class SignatureBase(ABC):
         pass
 
     @abstractmethod
-    def save_key_pair(
-        self, private_key, public_key, private_path: str, public_path: str, **kwargs
-    ) -> Tuple[str, str]:
-        """保存密钥对到文件
-
-        Args:
-            private_key: 私钥
-            public_key: 公钥
-            private_path: 私钥保存路径
-            public_path: 公钥保存路径
-
-        Returns:
-            Tuple[str, str]: 保存的私钥和公钥路径
-        """
-        pass
-
-    @abstractmethod
     def load_private_key(self, path: str, **kwargs):
         """从文件加载私钥
 

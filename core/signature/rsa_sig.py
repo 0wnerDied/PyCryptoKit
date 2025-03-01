@@ -1,5 +1,4 @@
 from typing import Union, Tuple, Optional, Literal
-import os
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.exceptions import InvalidSignature
@@ -127,57 +126,6 @@ class RSASignature(SignatureBase):
             return True
         except InvalidSignature:
             return False
-
-    def save_key_pair(
-        self,
-        private_key,
-        public_key,
-        private_path: str,
-        public_path: str,
-        password: Optional[bytes] = None,
-    ) -> Tuple[str, str]:
-        """保存 RSA 密钥对到文件
-
-        Args:
-            private_key: RSA 私钥
-            public_key: RSA 公钥
-            private_path: 私钥保存路径
-            public_path: 公钥保存路径
-            password: 私钥加密密码，可选
-
-        Returns:
-            Tuple[str, str]: 保存的私钥和公钥路径
-        """
-        # 确保目录存在
-        os.makedirs(os.path.dirname(private_path), exist_ok=True)
-        os.makedirs(os.path.dirname(public_path), exist_ok=True)
-
-        # 序列化私钥
-        encryption = (
-            serialization.BestAvailableEncryption(password)
-            if password
-            else serialization.NoEncryption()
-        )
-        private_bytes = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=encryption,
-        )
-
-        # 序列化公钥
-        public_bytes = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-
-        # 写入文件
-        with open(private_path, "wb") as f:
-            f.write(private_bytes)
-
-        with open(public_path, "wb") as f:
-            f.write(public_bytes)
-
-        return private_path, public_path
 
     def load_private_key(self, path: str, password: Optional[bytes] = None):
         """从文件加载 RSA 私钥

@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QScrollArea,
 )
-from PySide6.QtCore import Qt
 import os
 import base64
 
@@ -61,7 +60,7 @@ class SymmetricView(QWidget):
 
         # 将滚动区域添加到标签页
         self.tabs.addTab(encrypt_scroll, "加密")
-        self.tabs.addTab(decrypt_scroll, "验证")
+        self.tabs.addTab(decrypt_scroll, "解密")
 
         layout.addWidget(self.tabs)
         self.setLayout(layout)

@@ -667,7 +667,7 @@ class SignatureView(QWidget):
             self, "选择签名文件", "", "所有文件 (*.*);; 签名文件 (*.sig)"
         )
         if file_path:
-            self.sig_file_path.setText(file_path)
+            self.signature_file_path.setText(file_path)
 
     def on_file_path_changed(self):
         """文件路径变更处理"""
@@ -817,11 +817,13 @@ class SignatureView(QWidget):
     def get_signature_data(self) -> Optional[bytes]:
         """获取签名数据"""
         try:
-            if self.sig_text_radio.isChecked():
+            if self.signature_text_radio.isChecked():
                 # 从文本框获取签名
-                sig_text = self.sig_input.toPlainText()
+                sig_text = self.signature_input.toPlainText()
 
-                if self.sig_base64_radio.isChecked():
+                # 使用下拉框检查格式
+                signature_format = self.signature_format_combo.currentText()
+                if signature_format == "Base64":
                     # Base64 格式
                     try:
                         data = base64.b64decode(sig_text)
@@ -837,7 +839,7 @@ class SignatureView(QWidget):
                         return None
             else:
                 # 从文件获取签名
-                file_path = self.sig_file_path.text()
+                file_path = self.signature_file_path.text()
                 if not os.path.exists(file_path):
                     QMessageBox.warning(self, "错误", "签名文件不存在")
                     return None
@@ -1022,8 +1024,8 @@ class SignatureView(QWidget):
         self.verify_file_path.clear()
         self.verify_key_input.clear()
         self.verify_key_file_path.clear()
-        self.sig_input.clear()
-        self.sig_file_path.clear()
+        self.signature_input.clear()
+        self.signature_file_path.clear()
         self.verify_result.setText('请点击"验证签名"按钮进行验证')
         self.verify_result.setStyleSheet("")
         self.verify_file_info.clear()

@@ -126,19 +126,19 @@ HASH_ALGORITHMS: Dict[str, Tuple[Type[HashBase], bool, str, Dict[str, Any]]] = {
         BLAKE2bHash,
         True,
         "BLAKE2b 哈希算法 - 针对64位平台优化的高性能哈希算法, 支持1-64字节输出和可选密钥, 比MD5速度更快且安全",
-        {"digest_size": 64, "key": b"", "salt": b"", "person": b""},
+        {"digest_size": 64},
     ),
     "BLAKE2s": (
         BLAKE2sHash,
         True,
         "BLAKE2s 哈希算法 - 针对32位平台优化的高性能哈希算法, 支持1-32字节输出和可选密钥, 适用于资源受限环境",
-        {"digest_size": 32, "key": b"", "salt": b"", "person": b""},
+        {"digest_size": 32},
     ),
     "BLAKE3": (
         BLAKE3Hash,
         True,
         "BLAKE3 哈希算法 - 现代高性能并行哈希算法, 支持无限输出长度、密钥派生和内容寻址, 极高的吞吐量",
-        {"key": b""},
+        {},
     ),
     "SM3": (
         SM3Hash,

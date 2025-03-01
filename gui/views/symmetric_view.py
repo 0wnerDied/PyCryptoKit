@@ -662,9 +662,13 @@ class SymmetricView(QWidget):
         """根据选择的算法更新UI选项"""
         algorithm = self.algo_combo.currentText()
 
-        # 更新密钥长度选项可见性
-        key_size_visible = algorithm == "AES"
+        # 更新密钥长度选项可用性
+        key_size_visible = True  # 始终可见
+        key_size_enabled = algorithm == "AES"  # 只有AES时可用
+
         self.key_size_combo.setVisible(key_size_visible)
+        self.key_size_combo.setEnabled(key_size_enabled)
+
         parent_layout = self.key_size_combo.parentWidget().layout()
         if (
             parent_layout
@@ -672,6 +676,16 @@ class SymmetricView(QWidget):
             and parent_layout.itemAt(0).widget()
         ):
             parent_layout.itemAt(0).widget().setVisible(key_size_visible)
+            parent_layout.itemAt(0).widget().setEnabled(key_size_enabled)
+
+        # 根据算法设置密钥长度
+        if algorithm == "SM4":
+            # SM4固定使用128位密钥
+            self.key_size_combo.setCurrentText("128")
+        elif algorithm in ["CHACHA20", "SALSA20"]:
+            # ChaCha20和Salsa20使用256位密钥
+            self.key_size_combo.setCurrentText("256")
+        # AES保持用户选择的密钥长度
 
         # 更新模式和填充方式可见性
         is_block_cipher = algorithm in ["AES", "SM4"]
@@ -734,9 +748,13 @@ class SymmetricView(QWidget):
         """根据选择的解密算法更新UI选项"""
         algorithm = self.decrypt_algo_combo.currentText()
 
-        # 更新密钥长度选项可见性
-        key_size_visible = algorithm == "AES"
+        # 更新密钥长度选项可用性
+        key_size_visible = True  # 始终可见
+        key_size_enabled = algorithm == "AES"  # 只有AES时可用
+
         self.decrypt_key_size_combo.setVisible(key_size_visible)
+        self.decrypt_key_size_combo.setEnabled(key_size_enabled)
+
         parent_layout = self.decrypt_key_size_combo.parentWidget().layout()
         if (
             parent_layout
@@ -744,6 +762,16 @@ class SymmetricView(QWidget):
             and parent_layout.itemAt(0).widget()
         ):
             parent_layout.itemAt(0).widget().setVisible(key_size_visible)
+            parent_layout.itemAt(0).widget().setEnabled(key_size_enabled)
+
+        # 根据算法设置密钥长度
+        if algorithm == "SM4":
+            # SM4固定使用128位密钥
+            self.decrypt_key_size_combo.setCurrentText("128")
+        elif algorithm in ["CHACHA20", "SALSA20"]:
+            # ChaCha20和Salsa20使用256位密钥
+            self.decrypt_key_size_combo.setCurrentText("256")
+        # AES保持用户选择的密钥长度
 
         # 更新模式和填充方式可见性
         is_block_cipher = algorithm in ["AES", "SM4"]

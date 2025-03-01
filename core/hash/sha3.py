@@ -155,8 +155,12 @@ class SHA3_512Hash(SHA3Hash):
         return new_hash
 
 
-class SHAKEHash(SHA3Hash):
+class SHAKEHash(HashBase):
     """SHAKE 可扩展输出哈希函数基类"""
+
+    # 子类需要覆盖这些属性
+    _algorithm_name = None
+    _block_size = None
 
     def __init__(self, digest_size: int):
         """
@@ -168,33 +172,69 @@ class SHAKEHash(SHA3Hash):
         self._custom_digest_size = digest_size
         self.reset()
 
-    def reset(self) -> None:
-        """重置哈希对象的状态"""
-        self._hash = getattr(hashlib, self._algorithm_name.lower())(
-            self._custom_digest_size
-        )
+    @property
+    def name(self) -> str:
+        return f"{self._algorithm_name}_{self._custom_digest_size * 8}"
 
     @property
     def digest_size(self) -> int:
         return self._custom_digest_size
 
+    @property
+    def block_size(self) -> int:
+        return self._block_size
+
+    def update(self, data: Union[str, bytes, bytearray, memoryview]) -> "SHAKEHash":
+        """
+        更新哈希对象的状态
+
+        Args:
+            data: 要添加到哈希计算中的数据
+
+        Returns:
+            self: 支持链式调用
+        """
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+        self._hash.update(data)
+        return self
+
+    def digest(self) -> bytes:
+        """
+        返回当前数据的二进制摘要
+
+        Returns:
+            bytes: 哈希摘要
+        """
+        return self._hash.digest(self._custom_digest_size)
+
+    def hexdigest(self) -> str:
+        """
+        返回当前数据的十六进制摘要
+
+        Returns:
+            str: 十六进制格式的哈希摘要
+        """
+        return self._hash.hexdigest(self._custom_digest_size)
+
+    def reset(self) -> None:
+        """重置哈希对象的状态"""
+        # 修复: 创建时不传递参数，在 digest/hexdigest 时指定长度
+        self._hash = getattr(hashlib, self._algorithm_name.lower())()
+
 
 class SHAKE128Hash(SHAKEHash):
     """SHAKE128 可扩展输出哈希函数实现"""
 
-    _algorithm_name = "SHAKE_128"
+    _algorithm_name = "shake_128"
     _block_size = 168
 
-    @property
-    def name(self) -> str:
-        return f"{self._algorithm_name}_{self._custom_digest_size * 8}"
-
-    def __init__(self, digest_size: int = 16):
+    def __init__(self, digest_size: int = 32):
         """
         初始化 SHAKE128 哈希对象
 
         Args:
-            digest_size: 输出摘要的字节长度, 默认为 16
+            digest_size: 输出摘要的字节长度, 默认为 32
         """
         super().__init__(digest_size)
 
@@ -213,19 +253,15 @@ class SHAKE128Hash(SHAKEHash):
 class SHAKE256Hash(SHAKEHash):
     """SHAKE256 可扩展输出哈希函数实现"""
 
-    _algorithm_name = "SHAKE_256"
+    _algorithm_name = "shake_256"
     _block_size = 136
 
-    @property
-    def name(self) -> str:
-        return f"{self._algorithm_name}_{self._custom_digest_size * 8}"
-
-    def __init__(self, digest_size: int = 32):
+    def __init__(self, digest_size: int = 64):
         """
         初始化 SHAKE256 哈希对象
 
         Args:
-            digest_size: 输出摘要的字节长度, 默认为 32
+            digest_size: 输出摘要的字节长度, 默认为 64
         """
         super().__init__(digest_size)
 

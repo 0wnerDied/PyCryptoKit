@@ -105,7 +105,6 @@ class SM4Cipher(SymmetricCipher):
         plaintext: Union[str, bytes],
         key: Union[str, bytes],
         iv: Optional[Union[str, bytes]] = None,
-        include_iv: bool = False,
         **kwargs,
     ) -> Union[bytes, Tuple[bytes, bytes]]:
         """
@@ -115,7 +114,6 @@ class SM4Cipher(SymmetricCipher):
             plaintext: 明文
             key: 密钥
             iv: 初始向量(除ECB外的模式需要)
-            include_iv: 是否在返回的密文中包含IV
             **kwargs: 其他参数
 
         Returns:
@@ -167,13 +165,7 @@ class SM4Cipher(SymmetricCipher):
             encryptor = cipher.encryptor()
             ciphertext = encryptor.update(padded_plaintext) + encryptor.finalize()
 
-            # 根据include_iv参数决定返回格式
-            if include_iv and needs_iv:
-                # 将IV与密文合并：IV长度(2字节) + IV + 密文
-                iv_length = len(used_iv).to_bytes(2, byteorder="big")
-                return iv_length + used_iv + ciphertext
-            else:
-                return ciphertext
+            return ciphertext
 
         except Exception as e:
             raise ValueError(f"SM4加密失败: {str(e)}")
@@ -183,7 +175,6 @@ class SM4Cipher(SymmetricCipher):
         ciphertext: bytes,
         key: Union[str, bytes],
         iv: Optional[Union[str, bytes]] = None,
-        iv_included: bool = False,
         **kwargs,
     ) -> bytes:
         """
@@ -193,7 +184,6 @@ class SM4Cipher(SymmetricCipher):
             ciphertext: 密文
             key: 密钥
             iv: 初始向量(除ECB外的模式需要)，如果iv_included为True且密文包含IV，则此参数可选
-            iv_included: 密文中是否包含IV
             **kwargs: 其他参数
 
         Returns:
@@ -209,38 +199,7 @@ class SM4Cipher(SymmetricCipher):
         used_iv = None
         actual_ciphertext = ciphertext
 
-        # 如果需要IV且密文中包含IV
-        if needs_iv and iv_included:
-            try:
-                # 从密文中提取IV长度
-                if len(ciphertext) < 2:
-                    raise ValueError("密文长度不足，无法提取IV信息")
-
-                iv_length = int.from_bytes(ciphertext[:2], byteorder="big")
-
-                if iv_length > 0:
-                    # 检查密文长度是否足够
-                    if len(ciphertext) < 2 + iv_length:
-                        raise ValueError("密文长度不足，无法提取完整IV")
-
-                    # 从密文中提取IV
-                    used_iv = ciphertext[2 : 2 + iv_length]
-                    # 剩余部分是实际密文
-                    actual_ciphertext = ciphertext[2 + iv_length :]
-                else:
-                    # IV长度为0，使用用户提供的IV
-                    actual_ciphertext = ciphertext[2:]  # 跳过IV长度字段
-                    if iv is None:
-                        raise ValueError(f"{self.mode.value}模式解密需要提供IV")
-                    used_iv = iv
-            except Exception as e:
-                # 如果提取IV失败，假设密文不包含IV，使用用户提供的IV
-                actual_ciphertext = ciphertext
-                if iv is None:
-                    raise ValueError(f"{self.mode.value}模式解密需要提供IV")
-                used_iv = iv
-        elif needs_iv:
-            # 需要IV但密文不包含IV，使用用户提供的IV
+        if needs_iv:
             if iv is None:
                 raise ValueError(f"{self.mode.value}模式解密需要提供IV")
 

@@ -194,8 +194,8 @@ class SignatureView(QWidget):
         )
         encoding_layout.addWidget(self.encoding_combo)
 
-        # 十六进制输入选项
-        self.hex_input_check = QCheckBox("十六进制输入")
+        # Hex 输入选项
+        self.hex_input_check = QCheckBox("Hex 输入")
         encoding_layout.addWidget(self.hex_input_check)
         text_layout.addLayout(encoding_layout)
 
@@ -272,7 +272,7 @@ class SignatureView(QWidget):
         format_group_layout = QHBoxLayout()
 
         self.base64_radio = QRadioButton("Base64 格式")
-        self.hex_radio = QRadioButton("十六进制格式")
+        self.hex_radio = QRadioButton("Hex 格式")
         self.base64_radio.setChecked(True)  # 默认选择Base64
 
         # 将单选按钮添加到布局
@@ -417,8 +417,8 @@ class SignatureView(QWidget):
         )
         encoding_layout.addWidget(self.verify_encoding_combo)
 
-        # 十六进制输入选项
-        self.verify_hex_input_check = QCheckBox("十六进制输入")
+        # Hex 输入选项
+        self.verify_hex_input_check = QCheckBox("Hex 输入")
         encoding_layout.addWidget(self.verify_hex_input_check)
         text_layout.addLayout(encoding_layout)
 
@@ -483,7 +483,7 @@ class SignatureView(QWidget):
         format_layout = QHBoxLayout()
         format_layout.addWidget(QLabel("签名格式:"))
         self.signature_format_combo = QComboBox()
-        self.signature_format_combo.addItems(["Base64", "十六进制"])
+        self.signature_format_combo.addItems(["Base64", "Hex "])
         format_layout.addWidget(self.signature_format_combo)
         signature_text_layout.addLayout(format_layout)
 
@@ -756,11 +756,11 @@ class SignatureView(QWidget):
                 text = self.text_input.toPlainText()
 
                 if self.hex_input_check.isChecked():
-                    # 十六进制输入
+                    # Hex 输入
                     try:
                         data = bytes.fromhex(text)
                     except ValueError:
-                        QMessageBox.warning(self, "错误", "十六进制格式不正确")
+                        QMessageBox.warning(self, "错误", "Hex 格式不正确")
                         return None
                 else:
                     # 文本输入
@@ -789,11 +789,11 @@ class SignatureView(QWidget):
                 text = self.verify_text_input.toPlainText()
 
                 if self.verify_hex_input_check.isChecked():
-                    # 十六进制输入
+                    # Hex 输入
                     try:
                         data = bytes.fromhex(text)
                     except ValueError:
-                        QMessageBox.warning(self, "错误", "十六进制格式不正确")
+                        QMessageBox.warning(self, "错误", "Hex 格式不正确")
                         return None
                 else:
                     # 文本输入
@@ -831,11 +831,11 @@ class SignatureView(QWidget):
                         QMessageBox.warning(self, "错误", "Base64 格式不正确")
                         return None
                 else:
-                    # 十六进制格式
+                    # Hex 格式
                     try:
                         data = bytes.fromhex(sig_text)
                     except ValueError:
-                        QMessageBox.warning(self, "错误", "十六进制格式不正确")
+                        QMessageBox.warning(self, "错误", "Hex 格式不正确")
                         return None
             else:
                 # 从文件获取签名
@@ -921,7 +921,7 @@ class SignatureView(QWidget):
                 # Base64 格式
                 result = base64.b64encode(self.last_signature).decode("ascii")
             elif self.hex_radio.isChecked():
-                # 十六进制格式
+                # Hex 格式
                 result = self.last_signature.hex()
                 if self.uppercase_check.isChecked():
                     result = result.upper()

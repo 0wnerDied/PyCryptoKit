@@ -148,12 +148,12 @@ class SymmetricView(QWidget):
 
         # 密钥格式选项
         key_format_layout = QHBoxLayout()
-        self.key_hex_check = QCheckBox("十六进制密钥")
+        self.key_hex_check = QCheckBox("Hex密钥")
         key_format_layout.addWidget(self.key_hex_check)
         self.key_b64_check = QCheckBox("Base64密钥")
         key_format_layout.addWidget(self.key_b64_check)
 
-        # 默认选择十六进制
+        # 默认选择 Hex 
         self.key_hex_check.setChecked(True)
         self.key_hex_check.toggled.connect(
             lambda checked: self.handle_key_format_change(self.key_hex_check)
@@ -180,12 +180,12 @@ class SymmetricView(QWidget):
 
         # IV格式选项
         iv_format_layout = QHBoxLayout()
-        self.iv_hex_check = QCheckBox("十六进制IV")
+        self.iv_hex_check = QCheckBox("Hex IV")
         iv_format_layout.addWidget(self.iv_hex_check)
         self.iv_b64_check = QCheckBox("Base64 IV")
         iv_format_layout.addWidget(self.iv_b64_check)
 
-        # 默认选择十六进制
+        # 默认选择 Hex 
         self.iv_hex_check.setChecked(True)
         self.iv_hex_check.toggled.connect(
             lambda checked: self.handle_iv_format_change(self.iv_hex_check)
@@ -238,8 +238,8 @@ class SymmetricView(QWidget):
         )
         encoding_layout.addWidget(self.encoding_combo)
 
-        # 十六进制输入选项
-        self.hex_input_check = QCheckBox("十六进制输入")
+        # Hex 输入选项
+        self.hex_input_check = QCheckBox("Hex输入")
         encoding_layout.addWidget(self.hex_input_check)
         text_layout.addLayout(encoding_layout)
 
@@ -319,7 +319,7 @@ class SymmetricView(QWidget):
         self.base64_output_check.setChecked(True)  # 默认使用Base64输出
         format_layout.addWidget(self.base64_output_check)
 
-        self.hex_output_check = QCheckBox("十六进制输出")
+        self.hex_output_check = QCheckBox("Hex输出")
         format_layout.addWidget(self.hex_output_check)
 
         # 互斥选择
@@ -420,12 +420,12 @@ class SymmetricView(QWidget):
 
         # 密钥格式选项
         key_format_layout = QHBoxLayout()
-        self.decrypt_key_hex_check = QCheckBox("十六进制密钥")
+        self.decrypt_key_hex_check = QCheckBox("Hex密钥")
         key_format_layout.addWidget(self.decrypt_key_hex_check)
         self.decrypt_key_b64_check = QCheckBox("Base64密钥")
         key_format_layout.addWidget(self.decrypt_key_b64_check)
 
-        # 默认选择十六进制
+        # 默认选择 Hex 
         self.decrypt_key_hex_check.setChecked(True)
         self.decrypt_key_hex_check.toggled.connect(
             lambda checked: self.handle_decrypt_key_format_change(
@@ -450,12 +450,12 @@ class SymmetricView(QWidget):
 
         # IV格式选项
         iv_format_layout = QHBoxLayout()
-        self.decrypt_iv_hex_check = QCheckBox("十六进制IV")
+        self.decrypt_iv_hex_check = QCheckBox("Hex IV")
         iv_format_layout.addWidget(self.decrypt_iv_hex_check)
         self.decrypt_iv_b64_check = QCheckBox("Base64 IV")
         iv_format_layout.addWidget(self.decrypt_iv_b64_check)
 
-        # 默认选择十六进制
+        # 默认选择Hex 
         self.decrypt_iv_hex_check.setChecked(True)
         self.decrypt_iv_hex_check.toggled.connect(
             lambda checked: self.handle_decrypt_iv_format_change(
@@ -509,7 +509,7 @@ class SymmetricView(QWidget):
         self.decrypt_base64_input_check.setChecked(True)  # 默认使用Base64输入
         format_layout.addWidget(self.decrypt_base64_input_check)
 
-        self.decrypt_hex_input_check = QCheckBox("十六进制输入")
+        self.decrypt_hex_input_check = QCheckBox("Hex输入")
         format_layout.addWidget(self.decrypt_hex_input_check)
 
         # 互斥选择
@@ -944,7 +944,7 @@ class SymmetricView(QWidget):
             elif self.key_b64_check.isChecked():
                 self.key_input.setText(base64.b64encode(random_key).decode("ascii"))
             else:
-                # 默认使用十六进制
+                # 默认使用 Hex 
                 self.key_input.setText(random_key.hex())
                 self.key_hex_check.setChecked(True)
         except Exception as e:
@@ -979,7 +979,7 @@ class SymmetricView(QWidget):
             elif self.iv_b64_check.isChecked():
                 self.iv_input.setText(base64.b64encode(random_iv).decode("ascii"))
             else:
-                # 默认使用十六进制
+                # 默认使用 Hex 
                 self.iv_input.setText(random_iv.hex())
                 self.iv_hex_check.setChecked(True)
         except Exception as e:
@@ -996,7 +996,7 @@ class SymmetricView(QWidget):
         elif self.key_b64_check.isChecked():
             return base64.b64decode(key_text)
         else:
-            # 默认当作十六进制处理
+            # 默认当作 Hex 处理
             return bytes.fromhex(key_text)
 
     def get_iv_bytes(self):
@@ -1010,7 +1010,7 @@ class SymmetricView(QWidget):
         elif self.iv_b64_check.isChecked():
             return base64.b64decode(iv_text)
         else:
-            # 默认当作十六进制处理
+            # 默认当作 Hex 处理
             return bytes.fromhex(iv_text)
 
     def get_decrypt_key_bytes(self):
@@ -1024,7 +1024,7 @@ class SymmetricView(QWidget):
         elif self.decrypt_key_b64_check.isChecked():
             return base64.b64decode(key_text)
         else:
-            # 默认当作十六进制处理
+            # 默认当作 Hex 处理
             return bytes.fromhex(key_text)
 
     def get_decrypt_iv_bytes(self):
@@ -1038,7 +1038,7 @@ class SymmetricView(QWidget):
         elif self.decrypt_iv_b64_check.isChecked():
             return base64.b64decode(iv_text)
         else:
-            # 默认当作十六进制处理
+            # 默认当作 Hex 处理
             return bytes.fromhex(iv_text)
 
     def perform_encryption(self):
@@ -1083,7 +1083,7 @@ class SymmetricView(QWidget):
                     self.result.setText(result)
                     self.last_result = result.encode("ascii")
                 else:
-                    # 使用十六进制输出
+                    # 使用 Hex 输出
                     ciphertext = encrypt(algorithm, plaintext, key, iv, **kwargs)
                     self.result.setText(ciphertext.hex())
                     self.last_result = ciphertext
@@ -1154,11 +1154,11 @@ class SymmetricView(QWidget):
                         algorithm, cipher_text, key, iv, **kwargs
                     )
                 elif self.decrypt_hex_input_check.isChecked():
-                    # 从十六进制解密
+                    # 从 Hex 解密
                     ciphertext = bytes.fromhex(cipher_text)
                     plaintext = decrypt(algorithm, ciphertext, key, iv, **kwargs)
                 else:
-                    raise ValueError("请选择密文格式 (Base64 或十六进制)")
+                    raise ValueError("请选择密文格式 (Base64 或 Hex)")
 
                 # 显示结果
                 try:
@@ -1167,9 +1167,9 @@ class SymmetricView(QWidget):
                     self.decrypt_result.setText(result_text)
                     self.last_decrypt_result = result_text
                 except UnicodeDecodeError:
-                    # 如果无法解码为文本, 显示十六进制
+                    # 如果无法解码为文本, 显示 Hex 
                     self.decrypt_result.setText(
-                        f"无法以{encoding}解码结果, 显示十六进制:\n{plaintext.hex()}"
+                        f"无法以{encoding}解码结果, 显示 Hex:\n{plaintext.hex()}"
                     )
                     self.last_decrypt_result = plaintext.hex()
             else:

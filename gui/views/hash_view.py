@@ -109,8 +109,8 @@ class HashView(QWidget):
         )
         encoding_layout.addWidget(self.encoding_combo)
 
-        # 十六进制输入选项
-        self.hex_input_check = QCheckBox("十六进制输入")
+        # Hex 输入选项
+        self.hex_input_check = QCheckBox("Hex 输入")
         encoding_layout.addWidget(self.hex_input_check)
         text_layout.addLayout(encoding_layout)
 
@@ -270,11 +270,11 @@ class HashView(QWidget):
                     return
 
                 try:
-                    # 处理十六进制输入
+                    # 处理 Hex 输入
                     if self.hex_input_check.isChecked():
                         # 移除所有空白字符
                         text = "".join(text.split())
-                        # 转换十六进制为字节
+                        # 转换 Hex 为字节
                         data = bytes.fromhex(text)
                         self.last_result = hash_obj.hash_data(data)
                     else:
@@ -284,7 +284,7 @@ class HashView(QWidget):
 
                     self.update_result_format()
                 except ValueError as e:
-                    QMessageBox.warning(self, "错误", f"十六进制格式错误: {str(e)}")
+                    QMessageBox.warning(self, "错误", f"Hex 格式错误: {str(e)}")
                     return
                 except UnicodeEncodeError as e:
                     QMessageBox.warning(self, "错误", f"编码错误: {str(e)}")
@@ -311,7 +311,7 @@ class HashView(QWidget):
             return
 
         try:
-            # 直接以十六进制格式显示哈希结果
+            # 直接以 Hex 格式显示哈希结果
             result = self.last_result.hex()
 
             # 如果选择了大写显示

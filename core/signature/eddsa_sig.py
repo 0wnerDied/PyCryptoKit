@@ -6,24 +6,24 @@ from .base import SignatureBase
 
 
 class EdDSASignature(SignatureBase):
-    """EdDSA 签名实现类（支持 Ed25519 和 Ed448 算法）"""
+    """EdDSA 签名实现类 (支持 Ed25519 和 Ed448 算法)"""
 
     def __init__(self, curve: str = "Ed25519"):
         """初始化 EdDSA 签名类
 
         Args:
-            curve: 曲线类型，可选 "Ed25519"（默认）或 "Ed448"
+            curve: 曲线类型, 可选 "Ed25519" (默认) 或 "Ed448"
         """
         if curve not in ("Ed25519", "Ed448"):
             raise ValueError("曲线类型必须是 Ed25519 或 Ed448")
         self.curve = curve
-        self.context = b""  # RFC8032 上下文，默认为空
+        self.context = b""  # RFC8032 上下文, 默认为空
 
     def set_context(self, context: bytes) -> None:
         """设置签名上下文
 
         Args:
-            context: 最多 255 字节的上下文数据，用于区分不同协议或应用
+            context: 最多 255 字节的上下文数据, 用于区分不同协议或应用
         """
         if len(context) > 255:
             raise ValueError("上下文数据不能超过 255 字节")
@@ -50,14 +50,14 @@ class EdDSASignature(SignatureBase):
         Args:
             data: 要签名的数据
             private_key: EdDSA 私钥对象或 PEM 格式的私钥字节数据
-            password: 私钥密码（如果私钥是 PEM 格式且已加密）
+            password: 私钥密码 (如果私钥是 PEM 格式且已加密)
 
         Returns:
             bytes: 签名结果
         """
         data = self._ensure_bytes(data)
 
-        # 如果 private_key 是字节数据，则加载它
+        # 如果 private_key 是字节数据, 则加载它
         if isinstance(private_key, bytes):
             private_key = ECC.import_key(private_key, passphrase=password)
 
@@ -81,7 +81,7 @@ class EdDSASignature(SignatureBase):
         """
         data = self._ensure_bytes(data)
 
-        # 如果 public_key 是字节数据，则加载它
+        # 如果 public_key 是字节数据, 则加载它
         if isinstance(public_key, bytes):
             public_key = ECC.import_key(public_key)
 
@@ -98,7 +98,7 @@ class EdDSASignature(SignatureBase):
 
         Args:
             path: 私钥文件路径
-            password: 私钥密码，如果有加密
+            password: 私钥密码, 如果有加密
 
         Returns:
             EdDSA 私钥对象
@@ -139,7 +139,7 @@ class EdDSASignature(SignatureBase):
         return public_key
 
     def import_private_key_raw(self, key_data: bytes):
-        """从原始字节导入私钥（RFC8032）
+        """从原始字节导入私钥 (RFC8032)
 
         Args:
             key_data: 私钥的原始字节
@@ -160,7 +160,7 @@ class EdDSASignature(SignatureBase):
         return private_key
 
     def import_public_key_raw(self, key_data: bytes):
-        """从原始字节导入公钥（RFC8032）
+        """从原始字节导入公钥 (RFC8032)
 
         Args:
             key_data: 公钥的原始字节
@@ -184,7 +184,7 @@ class EdDSASignature(SignatureBase):
         """确保数据为字节类型
 
         Args:
-            data: 输入数据，可以是字符串或字节
+            data: 输入数据, 可以是字符串或字节
 
         Returns:
             bytes: 字节类型的数据

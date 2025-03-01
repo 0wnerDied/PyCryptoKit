@@ -25,7 +25,7 @@ class AESCipher(SymmetricCipher):
         """
         # 验证密钥长度
         if key_size not in [128, 192, 256]:
-            raise ValueError(f"AES密钥长度必须是128、192或256位，不支持{key_size}位")
+            raise ValueError(f"AES密钥长度必须是128、192或256位, 不支持{key_size}位")
 
         self.key_size = key_size
         self.key_length = key_size // 8  # 转换为字节长度
@@ -47,7 +47,7 @@ class AESCipher(SymmetricCipher):
         if mode not in self.mode_map:
             supported_str = ", ".join([m.value for m in self.mode_map.keys()])
             raise ValueError(
-                f"AES不支持{mode.value}模式，支持的模式有: {supported_str}"
+                f"AES不支持{mode.value}模式, 支持的模式有: {supported_str}"
             )
 
     def encrypt(
@@ -92,7 +92,7 @@ class AESCipher(SymmetricCipher):
             else:
                 iv = iv[:16].ljust(16, b"\0")  # 其他模式16字节
 
-        # 填充处理 (对所有模式，只要选择了填充方式)
+        # 填充处理 (对所有模式, 只要选择了填充方式)
         if self.padding != Padding.NONE:
             if self.padding == Padding.PKCS7:
                 plaintext = pad(plaintext, self.block_size)
@@ -102,10 +102,10 @@ class AESCipher(SymmetricCipher):
                 if padding_length != self.block_size:  # 只有在需要填充时才填充
                     plaintext = plaintext + b"\x00" * padding_length
         else:
-            # 无填充模式下，数据长度必须是块大小的整数倍
+            # 无填充模式下, 数据长度必须是块大小的整数倍
             if len(plaintext) % self.block_size != 0:
                 raise ValueError(
-                    f"无填充模式下，数据长度必须是{self.block_size}的整数倍"
+                    f"无填充模式下, 数据长度必须是{self.block_size}的整数倍"
                 )
 
         try:
@@ -161,7 +161,7 @@ class AESCipher(SymmetricCipher):
             ciphertext: 密文
             key: 密钥
             iv: 初始向量(如果加密时未包含在密文中)
-            **kwargs: 其他参数，如CFB模式的segment_size
+            **kwargs: 其他参数, 如CFB模式的segment_size
 
         Returns:
             bytes: 解密后的明文
@@ -199,7 +199,7 @@ class AESCipher(SymmetricCipher):
                         try:
                             plaintext = unpad(plaintext, self.block_size)
                         except ValueError:
-                            # 如果解除填充失败，可能是填充无效，返回原始数据
+                            # 如果解除填充失败, 可能是填充无效, 返回原始数据
                             pass
                     elif self.padding == Padding.ZERO:
                         plaintext = plaintext.rstrip(b"\x00")
@@ -246,13 +246,13 @@ class AESCipher(SymmetricCipher):
             # 解密
             plaintext = cipher.decrypt(ciphertext)
 
-            # 去除填充 (对所有模式，只要选择了填充方式)
+            # 去除填充 (对所有模式, 只要选择了填充方式)
             if self.padding != Padding.NONE:
                 if self.padding == Padding.PKCS7:
                     try:
                         plaintext = unpad(plaintext, self.block_size)
                     except ValueError:
-                        # 如果解除填充失败，可能是填充无效，返回原始数据
+                        # 如果解除填充失败, 可能是填充无效, 返回原始数据
                         pass
                 elif self.padding == Padding.ZERO:
                     plaintext = plaintext.rstrip(b"\x00")
@@ -271,7 +271,7 @@ class AESCipher(SymmetricCipher):
         if isinstance(key, str):
             key = key.encode("utf-8")
 
-        # 如果密钥长度不足，使用填充；如果过长，则截断
+        # 如果密钥长度不足, 使用填充；如果过长, 则截断
         if len(key) < length:
             return key.ljust(length, b"\0")  # 使用0填充
         return key[:length]  # 截断到指定长度

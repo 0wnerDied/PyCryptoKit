@@ -81,7 +81,7 @@ class HashBase(ABC):
         if not isinstance(data, (str, bytes, bytearray)):
             raise TypeError(f"不支持的数据类型: {type(data).__name__}")
 
-        # 如果是字符串，转换为字节
+        # 如果是字符串, 转换为字节
         if isinstance(data, str):
             try:
                 data = data.encode(encoding)

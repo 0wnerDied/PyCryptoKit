@@ -151,7 +151,7 @@ class RSACipher:
         if isinstance(data, str):
             data = data.encode("utf-8")
 
-        # RSA加密有大小限制，这里使用OAEP填充
+        # RSA加密有大小限制, 这里使用OAEP填充
         ciphertext = self._public_key.encrypt(
             data,
             padding.OAEP(
@@ -192,7 +192,7 @@ class RSACipher:
         self, data: Union[str, bytes], chunk_size: Optional[int] = None
     ) -> bytes:
         """
-        加密大型数据（分块加密）
+        加密大型数据 (分块加密)
 
         Args:
             data: 要加密的数据
@@ -207,12 +207,12 @@ class RSACipher:
         if isinstance(data, str):
             data = data.encode("utf-8")
 
-        # 计算最大可加密大小（密钥大小/8 - OAEP填充开销）
+        # 计算最大可加密大小 (密钥大小/8 - OAEP填充开销)
         # OAEP开销 = 2 * hash_size + 2
-        # 对于SHA256，hash_size = 32字节，所以开销是66字节
+        # 对于SHA256, hash_size = 32字节, 所以开销是66字节
         max_chunk_size = self._public_key.key_size // 8 - 66
 
-        # 如果提供了chunk_size，确保不超过最大值
+        # 如果提供了chunk_size, 确保不超过最大值
         if chunk_size is None:
             chunk_size = max_chunk_size
         elif chunk_size > max_chunk_size:
@@ -240,7 +240,7 @@ class RSACipher:
 
     def decrypt_large_data(self, data: bytes) -> bytes:
         """
-        解密大型数据（分块解密）
+        解密大型数据 (分块解密)
 
         Args:
             data: 要解密的数据

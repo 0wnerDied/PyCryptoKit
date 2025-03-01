@@ -22,7 +22,7 @@ class HashFactory:
             algorithm: 算法名称
 
         Returns:
-            Dict: 包含算法信息的字典，格式为:
+            Dict: 包含算法信息的字典, 格式为:
                 {
                     "name": 算法名称,
                     "class": 类名,
@@ -91,10 +91,10 @@ class HashFactory:
         params = default_params.copy()
         for key, value in kwargs.items():
             if key in params or not params:
-                # 如果参数在默认参数列表中，或者默认参数为空（表示算法不需要特定参数）
+                # 如果参数在默认参数列表中, 或者默认参数为空 (表示算法不需要特定参数)
                 params[key] = value
             else:
-                # 如果参数不在默认参数列表中，且不是空字典，则可能是无效参数
+                # 如果参数不在默认参数列表中, 且不是空字典, 则可能是无效参数
                 raise ValueError(
                     f"算法 {algorithm} 不支持参数: {key}. 支持的参数: {', '.join(default_params.keys())}"
                 )

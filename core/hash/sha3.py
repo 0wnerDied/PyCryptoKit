@@ -4,7 +4,7 @@ SHA3 系列哈希算法实现
 提供 SHA3_224、SHA3_256、SHA3_384、SHA3_512、SHAKE128 和 SHAKE256 哈希算法实现。
 所有实现基于 cryptography 库。
 
-SHA3 (Secure Hash Algorithm 3) 是由 NIST 于 2015 年标准化的哈希函数家族，
+SHA3 (Secure Hash Algorithm 3) 是由 NIST 于 2015 年标准化的哈希函数家族, 
 基于 Keccak 算法。
 """
 
@@ -198,7 +198,7 @@ class SHAKE128Hash(SHA3Hash):
 
     @property
     def digest_size(self) -> int:
-        # SHAKE128 没有固定的摘要大小，默认为 16 字节
+        # SHAKE128 没有固定的摘要大小, 默认为 16 字节
         return 16
 
     @property
@@ -210,7 +210,7 @@ class SHAKE128Hash(SHA3Hash):
         初始化 SHAKE128 哈希对象
 
         Args:
-            digest_size: 输出摘要的字节长度，默认为 16
+            digest_size: 输出摘要的字节长度, 默认为 16
         """
         self._digest_size = digest_size
         super().__init__(hashes.SHAKE128(digest_size))
@@ -236,7 +236,7 @@ class SHAKE256Hash(SHA3Hash):
 
     @property
     def digest_size(self) -> int:
-        # SHAKE256 没有固定的摘要大小，默认为 32 字节
+        # SHAKE256 没有固定的摘要大小, 默认为 32 字节
         return 32
 
     @property
@@ -248,7 +248,7 @@ class SHAKE256Hash(SHA3Hash):
         初始化 SHAKE256 哈希对象
 
         Args:
-            digest_size: 输出摘要的字节长度，默认为 32
+            digest_size: 输出摘要的字节长度, 默认为 32
         """
         self._digest_size = digest_size
         super().__init__(hashes.SHAKE256(digest_size))

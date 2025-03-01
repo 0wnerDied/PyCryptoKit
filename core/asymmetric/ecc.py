@@ -77,7 +77,7 @@ class ECCCipher:
 
         Args:
             key_data: PEM 格式的私钥数据
-            password: 如果私钥有密码保护，提供密码
+            password: 如果私钥有密码保护, 提供密码
         """
         try:
             if isinstance(key_data, str):
@@ -160,7 +160,7 @@ class ECCCipher:
             try:
                 with os.fdopen(fd, "wb") as temp_file:
                     temp_file.write(pem)
-                # 在Unix系统上，这是原子操作
+                # 在Unix系统上, 这是原子操作
                 os.replace(temp_path, filename)
                 logger.info(f"成功保存私钥到文件: {filename}")
             except Exception as e:
@@ -194,7 +194,7 @@ class ECCCipher:
             try:
                 with os.fdopen(fd, "wb") as temp_file:
                     temp_file.write(pem)
-                # 在Unix系统上，这是原子操作
+                # 在Unix系统上, 这是原子操作
                 os.replace(temp_path, filename)
                 logger.info(f"成功保存公钥到文件: {filename}")
             except Exception as e:
@@ -297,7 +297,7 @@ class ECCCipher:
         使用ECIES解密数据
 
         Args:
-            encrypted_data: 包含加密数据的字典，应包含：
+            encrypted_data: 包含加密数据的字典, 应包含：
                 - ephemeral_public_key: 临时公钥字节
                 - salt: 盐值
                 - iv: 初始化向量
@@ -332,7 +332,7 @@ class ECCCipher:
             derived_key = HKDF(
                 algorithm=hashes.SHA256(),
                 length=32,  # 256位AES密钥
-                salt=salt,  # 使用提供的盐值，如果是旧版本可能为None
+                salt=salt,  # 使用提供的盐值, 如果是旧版本可能为None
                 info=b"ECIES-AES-256",
                 backend=default_backend(),
             ).derive(shared_key)
@@ -410,7 +410,7 @@ class ECCCipher:
                 algorithms.AES(derived_key), modes.GCM(iv), backend=default_backend()
             ).encryptor()
 
-            # 可以添加额外的认证数据(AAD)，这里使用空字节
+            # 可以添加额外的认证数据(AAD), 这里使用空字节
             encryptor.authenticate_additional_data(b"")
 
             # 加密数据
@@ -467,7 +467,7 @@ class ECCCipher:
                     curve=self._curve, data=ephemeral_public_key_bytes
                 )
             except Exception:
-                # 尝试加载PEM格式的公钥（向后兼容）
+                # 尝试加载PEM格式的公钥 (向后兼容)
                 ephemeral_public_key = serialization.load_pem_public_key(
                     ephemeral_public_key_bytes, backend=default_backend()
                 )
@@ -491,7 +491,7 @@ class ECCCipher:
                 backend=default_backend(),
             ).decryptor()
 
-            # 可以添加额外的认证数据(AAD)，这里使用空字节
+            # 可以添加额外的认证数据(AAD), 这里使用空字节
             decryptor.authenticate_additional_data(b"")
 
             # 解密数据

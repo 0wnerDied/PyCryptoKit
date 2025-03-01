@@ -7,13 +7,13 @@ from .base import SignatureBase
 
 
 class RSASignature(SignatureBase):
-    """RSA 签名实现类，支持 PKCS#1 v1.5 和 PSS 两种填充方式"""
+    """RSA 签名实现类, 支持 PKCS#1 v1.5 和 PSS 两种填充方式"""
 
     def __init__(self, hash_algorithm=hashes.SHA256()):
         """初始化 RSA 签名类
 
         Args:
-            hash_algorithm: 哈希算法，默认为 SHA256
+            hash_algorithm: 哈希算法, 默认为 SHA256
         """
         self.hash_algorithm = hash_algorithm
 
@@ -21,7 +21,7 @@ class RSASignature(SignatureBase):
         """生成 RSA 密钥对
 
         Args:
-            key_size: 密钥大小，默认 2048 位
+            key_size: 密钥大小, 默认 2048 位
 
         Returns:
             Tuple: (私钥, 公钥)
@@ -44,16 +44,16 @@ class RSASignature(SignatureBase):
         Args:
             data: 要签名的数据
             private_key: RSA 私钥或私钥字节数据
-            password: 私钥密码（如果私钥是字节数据且已加密）
-            padding_mode: 填充模式，可选 "pkcs1v15"（传统RSA）或 "pss"（RSA-PSS）
-            pss_salt_length: PSS 模式的盐长度，仅在 padding_mode="pss" 时使用
+            password: 私钥密码 (如果私钥是字节数据且已加密)
+            padding_mode: 填充模式, 可选 "pkcs1v15" (传统RSA) 或 "pss" (RSA-PSS)
+            pss_salt_length: PSS 模式的盐长度, 仅在 padding_mode="pss" 时使用
 
         Returns:
             bytes: 签名结果
         """
         data = self._ensure_bytes(data)
 
-        # 如果 private_key 是字节数据，则加载它
+        # 如果 private_key 是字节数据, 则加载它
         if isinstance(private_key, bytes):
             from cryptography.hazmat.primitives.serialization import (
                 load_pem_private_key,
@@ -93,15 +93,15 @@ class RSASignature(SignatureBase):
             data: 原始数据
             signature: 签名
             public_key: RSA 公钥或公钥字节数据
-            padding_mode: 填充模式，可选 "pkcs1v15"（传统RSA）或 "pss"（RSA-PSS）
-            pss_salt_length: PSS 模式的盐长度，仅在 padding_mode="pss" 时使用
+            padding_mode: 填充模式, 可选 "pkcs1v15" (传统RSA) 或 "pss" (RSA-PSS)
+            pss_salt_length: PSS 模式的盐长度, 仅在 padding_mode="pss" 时使用
 
         Returns:
             bool: 验证是否通过
         """
         data = self._ensure_bytes(data)
 
-        # 如果 public_key 是字节数据，则加载它
+        # 如果 public_key 是字节数据, 则加载它
         if isinstance(public_key, bytes):
             from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
@@ -132,7 +132,7 @@ class RSASignature(SignatureBase):
 
         Args:
             path: 私钥文件路径
-            password: 私钥密码，如果有加密
+            password: 私钥密码, 如果有加密
 
         Returns:
             RSA 私钥对象
@@ -164,7 +164,7 @@ class RSASignature(SignatureBase):
         """确保数据为字节类型
 
         Args:
-            data: 输入数据，可以是字符串或字节
+            data: 输入数据, 可以是字符串或字节
 
         Returns:
             bytes: 字节类型的数据
@@ -175,7 +175,7 @@ class RSASignature(SignatureBase):
 
 
 class RSA_PKCS1v15Signature(RSASignature):
-    """传统 RSA 签名实现类（使用 PKCS#1 v1.5 填充）"""
+    """传统 RSA 签名实现类 (使用 PKCS#1 v1.5 填充)"""
 
     def sign(
         self,
@@ -184,12 +184,12 @@ class RSA_PKCS1v15Signature(RSASignature):
         password: Optional[bytes] = None,
         **kwargs
     ) -> bytes:
-        """使用传统 RSA 签名（PKCS#1 v1.5 填充）
+        """使用传统 RSA 签名 (PKCS#1 v1.5 填充)
 
         Args:
             data: 要签名的数据
             private_key: RSA 私钥或私钥字节数据
-            password: 私钥密码（如果私钥是字节数据且已加密）
+            password: 私钥密码 (如果私钥是字节数据且已加密)
 
         Returns:
             bytes: 签名结果
@@ -205,7 +205,7 @@ class RSA_PKCS1v15Signature(RSASignature):
     def verify(
         self, data: Union[bytes, str], signature: bytes, public_key, **kwargs
     ) -> bool:
-        """使用传统 RSA 验证签名（PKCS#1 v1.5 填充）
+        """使用传统 RSA 验证签名 (PKCS#1 v1.5 填充)
 
         Args:
             data: 原始数据
@@ -231,8 +231,8 @@ class RSA_PSSSignature(RSASignature):
         """初始化 RSA-PSS 签名类
 
         Args:
-            hash_algorithm: 哈希算法，默认为 SHA256
-            salt_length: PSS 盐长度，默认为 32 字节
+            hash_algorithm: 哈希算法, 默认为 SHA256
+            salt_length: PSS 盐长度, 默认为 32 字节
         """
         super().__init__(hash_algorithm=hash_algorithm)
         self.salt_length = salt_length
@@ -249,7 +249,7 @@ class RSA_PSSSignature(RSASignature):
         Args:
             data: 要签名的数据
             private_key: RSA 私钥或私钥字节数据
-            password: 私钥密码（如果私钥是字节数据且已加密）
+            password: 私钥密码 (如果私钥是字节数据且已加密)
 
         Returns:
             bytes: 签名结果

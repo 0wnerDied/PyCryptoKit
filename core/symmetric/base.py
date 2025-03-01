@@ -46,9 +46,9 @@ class SymmetricCipher(ABC):
         加密数据
 
         Args:
-            plaintext: 明文，字符串或字节
-            key: 密钥，字符串或字节
-            iv: 初始向量，字符串或字节（部分模式需要）
+            plaintext: 明文, 字符串或字节
+            key: 密钥, 字符串或字节
+            iv: 初始向量, 字符串或字节 (部分模式需要)
             **kwargs: 其他参数
 
         Returns:
@@ -69,8 +69,8 @@ class SymmetricCipher(ABC):
 
         Args:
             ciphertext: 密文
-            key: 密钥，字符串或字节
-            iv: 初始向量，字符串或字节（部分模式需要）
+            key: 密钥, 字符串或字节
+            iv: 初始向量, 字符串或字节 (部分模式需要)
             **kwargs: 其他参数
 
         Returns:
@@ -93,13 +93,13 @@ class SymmetricCipher(ABC):
         if isinstance(key, str):
             key = key.encode("utf-8")
 
-        # 如果密钥长度正确，直接返回
+        # 如果密钥长度正确, 直接返回
         if len(key) == required_length:
             return key
 
-        # 如果密钥过长，截断
+        # 如果密钥过长, 截断
         if len(key) > required_length:
             return key[:required_length]
 
-        # 如果密钥过短，重复使用密钥直到达到所需长度
+        # 如果密钥过短, 重复使用密钥直到达到所需长度
         return (key * (required_length // len(key) + 1))[:required_length]

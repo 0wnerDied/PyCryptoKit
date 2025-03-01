@@ -13,7 +13,7 @@ from . import SIGNATURE_ALGORITHMS, ALL_ALGORITHMS
 
 
 class SignatureFactory:
-    """签名算法工厂类，用于创建不同的签名算法实例"""
+    """签名算法工厂类, 用于创建不同的签名算法实例"""
 
     @staticmethod
     def get_algorithm_info(algorithm: str) -> Dict[str, Any]:
@@ -24,7 +24,7 @@ class SignatureFactory:
             algorithm: 算法名称
 
         Returns:
-            Dict: 包含算法信息的字典，格式为:
+            Dict: 包含算法信息的字典, 格式为:
                 {
                     "name": 算法名称,
                     "class": 类名,
@@ -65,7 +65,7 @@ class SignatureFactory:
         创建指定的签名算法实例
 
         Args:
-            algorithm: 算法名称，如 "RSA", "ECDSA"
+            algorithm: 算法名称, 如 "RSA", "ECDSA"
             **kwargs: 传递给算法构造函数的参数
 
         Returns:
@@ -84,7 +84,7 @@ class SignatureFactory:
         # 获取算法类和默认参数
         cls, _, default_params = SIGNATURE_ALGORITHMS[algorithm]
 
-        # 处理特殊参数（如哈希算法、曲线等）
+        # 处理特殊参数 (如哈希算法、曲线等)
         processed_kwargs = {}
 
         # 处理哈希算法
@@ -100,7 +100,7 @@ class SignatureFactory:
                 # 假设已经是哈希算法实例
                 processed_kwargs["哈希算法"] = hash_alg
 
-        # 处理椭圆曲线（仅适用于 ECDSA）
+        # 处理椭圆曲线 (仅适用于 ECDSA)
         if algorithm == "ECDSA" and "曲线" in kwargs:
             curve = kwargs.pop("曲线")
             if isinstance(curve, str):
@@ -139,7 +139,7 @@ class SignatureFactory:
 
         Args:
             name: 算法名称
-            algorithm_class: 算法类，必须继承自 SignatureBase
+            algorithm_class: 算法类, 必须继承自 SignatureBase
             description: 算法描述
             default_params: 默认参数
 

@@ -80,7 +80,7 @@ class SymmetricView(QWidget):
         algo_selector.addWidget(self.algo_combo)
         algo_layout.addLayout(algo_selector)
 
-        # 加密模式选择（仅对块密码有效）
+        # 加密模式选择 (仅对块密码有效)
         mode_layout = QHBoxLayout()
         mode_layout.addWidget(QLabel("加密模式:"))
         self.mode_combo = QComboBox()
@@ -90,7 +90,7 @@ class SymmetricView(QWidget):
         mode_layout.addWidget(self.mode_combo)
         algo_layout.addLayout(mode_layout)
 
-        # 填充方式选择（仅对块密码有效）
+        # 填充方式选择 (仅对块密码有效)
         padding_layout = QHBoxLayout()
         padding_layout.addWidget(QLabel("填充方式:"))
         self.padding_combo = QComboBox()
@@ -98,7 +98,7 @@ class SymmetricView(QWidget):
         padding_layout.addWidget(self.padding_combo)
         algo_layout.addLayout(padding_layout)
 
-        # 密钥大小选择（仅对AES有效）
+        # 密钥大小选择 (仅对AES有效)
         key_size_layout = QHBoxLayout()
         key_size_layout.addWidget(QLabel("密钥长度:"))
         self.key_size_combo = QComboBox()
@@ -182,7 +182,7 @@ class SymmetricView(QWidget):
 
         key_layout.addLayout(iv_format_layout)
 
-        # 关联数据（仅对GCM模式有效）
+        # 关联数据 (仅对GCM模式有效)
         aad_layout = QHBoxLayout()
         aad_layout.addWidget(QLabel("关联数据(AAD):"))
         self.aad_input = QLineEdit()
@@ -377,7 +377,7 @@ class SymmetricView(QWidget):
         padding_layout.addWidget(self.decrypt_padding_combo)
         algo_layout.addLayout(padding_layout)
 
-        # 密钥大小选择（仅对AES有效）
+        # 密钥大小选择 (仅对AES有效)
         key_size_layout = QHBoxLayout()
         key_size_layout.addWidget(QLabel("密钥长度:"))
         self.decrypt_key_size_combo = QComboBox()
@@ -458,7 +458,7 @@ class SymmetricView(QWidget):
 
         key_layout.addLayout(iv_format_layout)
 
-        # 关联数据（仅对GCM模式有效）
+        # 关联数据 (仅对GCM模式有效)
         aad_layout = QHBoxLayout()
         aad_layout.addWidget(QLabel("关联数据(AAD):"))
         self.decrypt_aad_input = QLineEdit()
@@ -692,7 +692,7 @@ class SymmetricView(QWidget):
         self.mode_combo.setEnabled(is_block_cipher)
         self.padding_combo.setEnabled(is_block_cipher)
 
-        # 如果是SM4，移除GCM模式
+        # 如果是SM4, 移除GCM模式
         if algorithm == "SM4":
             # 保存当前选择
             current_mode = self.mode_combo.currentText()
@@ -701,7 +701,7 @@ class SymmetricView(QWidget):
             for mode in self.all_modes:
                 if mode != "GCM":
                     self.mode_combo.addItem(mode)
-            # 尝试恢复之前的选择，如果不是GCM的话
+            # 尝试恢复之前的选择, 如果不是GCM的话
             if current_mode != "GCM":
                 index = self.mode_combo.findText(current_mode)
                 if index >= 0:
@@ -778,7 +778,7 @@ class SymmetricView(QWidget):
         self.decrypt_mode_combo.setEnabled(is_block_cipher)
         self.decrypt_padding_combo.setEnabled(is_block_cipher)
 
-        # 如果是SM4，移除GCM模式
+        # 如果是SM4, 移除GCM模式
         if algorithm == "SM4":
             # 保存当前选择
             current_mode = self.decrypt_mode_combo.currentText()
@@ -787,7 +787,7 @@ class SymmetricView(QWidget):
             for mode in self.all_modes:
                 if mode != "GCM":
                     self.decrypt_mode_combo.addItem(mode)
-            # 尝试恢复之前的选择，如果不是GCM的话
+            # 尝试恢复之前的选择, 如果不是GCM的话
             if current_mode != "GCM":
                 index = self.decrypt_mode_combo.findText(current_mode)
                 if index >= 0:
@@ -1051,7 +1051,7 @@ class SymmetricView(QWidget):
             key = self.get_key_bytes()
             iv = self.get_iv_bytes()
 
-            # 获取AAD（如果适用）
+            # 获取AAD (如果适用)
             if self.aad_input.isEnabled() and self.aad_input.text():
                 kwargs["associated_data"] = self.aad_input.text().encode("utf-8")
 
@@ -1092,7 +1092,7 @@ class SymmetricView(QWidget):
                 with open(output_path, "wb") as f:
                     f.write(ciphertext)
 
-                self.result.setText(f"文件加密完成，已保存到: {output_path}")
+                self.result.setText(f"文件加密完成, 已保存到: {output_path}")
                 self.last_result = ciphertext
 
         except Exception as e:
@@ -1123,7 +1123,7 @@ class SymmetricView(QWidget):
             key = self.get_decrypt_key_bytes()
             iv = self.get_decrypt_iv_bytes()
 
-            # 获取AAD（如果适用）
+            # 获取AAD (如果适用)
             if self.decrypt_aad_input.isEnabled() and self.decrypt_aad_input.text():
                 kwargs["associated_data"] = self.decrypt_aad_input.text().encode(
                     "utf-8"
@@ -1155,9 +1155,9 @@ class SymmetricView(QWidget):
                     self.decrypt_result.setText(result_text)
                     self.last_decrypt_result = result_text
                 except UnicodeDecodeError:
-                    # 如果无法解码为文本，显示十六进制
+                    # 如果无法解码为文本, 显示十六进制
                     self.decrypt_result.setText(
-                        f"无法以{encoding}解码结果，显示十六进制:\n{plaintext.hex()}"
+                        f"无法以{encoding}解码结果, 显示十六进制:\n{plaintext.hex()}"
                     )
                     self.last_decrypt_result = plaintext.hex()
             else:
@@ -1177,8 +1177,8 @@ class SymmetricView(QWidget):
                 with open(output_path, "wb") as f:
                     f.write(plaintext)
 
-                self.decrypt_result.setText(f"文件解密完成，已保存到: {output_path}")
-                self.last_decrypt_result = f"文件解密完成，已保存到: {output_path}"
+                self.decrypt_result.setText(f"文件解密完成, 已保存到: {output_path}")
+                self.last_decrypt_result = f"文件解密完成, 已保存到: {output_path}"
 
         except Exception as e:
             QMessageBox.warning(self, "解密错误", f"解密失败: {str(e)}")

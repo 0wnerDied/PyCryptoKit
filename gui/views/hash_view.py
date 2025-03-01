@@ -52,7 +52,7 @@ class HashView(QWidget):
         algo_selector.addWidget(QLabel("选择算法:"))
         self.algo_combo = QComboBox()
 
-        # 添加所有算法（不使用分组标题）
+        # 添加所有算法 (不使用分组标题)
         for algo in self.algorithms:
             self.algo_combo.addItem(algo)
 
@@ -244,7 +244,7 @@ class HashView(QWidget):
             is_secure = (
                 "安全"
                 if algorithm in SECURE_ALGORITHMS
-                else "不安全（已过时，仅用于兼容）"
+                else "不安全 (已过时, 仅用于兼容) "
             )
             self.algo_info.setText(
                 f"算法: {algorithm}\n安全性: {is_secure}\n描述: {info.get('description', '')}"

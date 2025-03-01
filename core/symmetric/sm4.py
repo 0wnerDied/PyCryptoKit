@@ -48,7 +48,7 @@ class SM4Cipher(SymmetricCipher):
         if self.padding == Padding.NONE:
             if len(data) % self.block_size != 0:
                 raise ValueError(
-                    f"无填充模式下，数据长度必须是{self.block_size}的整数倍"
+                    f"无填充模式下, 数据长度必须是{self.block_size}的整数倍"
                 )
             return data
 
@@ -80,7 +80,7 @@ class SM4Cipher(SymmetricCipher):
                     padding = data[-padding_length:]
                     if all(p == padding_length for p in padding):
                         return data[:-padding_length]
-            # 如果验证失败，返回原始数据
+            # 如果验证失败, 返回原始数据
             return data
 
         elif self.padding == Padding.ZERO:
@@ -95,7 +95,7 @@ class SM4Cipher(SymmetricCipher):
         if isinstance(key, str):
             key = key.encode("utf-8")
 
-        # 如果密钥长度不足，使用填充；如果过长，则截断
+        # 如果密钥长度不足, 使用填充；如果过长, 则截断
         if len(key) < length:
             return key.ljust(length, b"\0")  # 使用0填充
         return key[:length]  # 截断到指定长度
@@ -117,8 +117,8 @@ class SM4Cipher(SymmetricCipher):
             **kwargs: 其他参数
 
         Returns:
-            bytes: 如果include_iv为False，返回加密后的密文
-            Tuple[bytes, bytes]: 如果include_iv为True，返回(iv, 密文)元组
+            bytes: 如果include_iv为False, 返回加密后的密文
+            Tuple[bytes, bytes]: 如果include_iv为True, 返回(iv, 密文)元组
         """
         # 处理输入
         if isinstance(plaintext, str):
@@ -144,7 +144,7 @@ class SM4Cipher(SymmetricCipher):
             elif len(used_iv) > 16:
                 used_iv = used_iv[:16]
 
-        if self.padding != Padding.NONE:  # 只要不是NONE，都进行填充
+        if self.padding != Padding.NONE:  # 只要不是NONE, 都进行填充
             padded_plaintext = self._pad_data(plaintext)
         else:
             padded_plaintext = plaintext
@@ -183,7 +183,7 @@ class SM4Cipher(SymmetricCipher):
         Args:
             ciphertext: 密文
             key: 密钥
-            iv: 初始向量(除ECB外的模式需要)，如果iv_included为True且密文包含IV，则此参数可选
+            iv: 初始向量(除ECB外的模式需要), 如果iv_included为True且密文包含IV, 则此参数可选
             **kwargs: 其他参数
 
         Returns:
@@ -230,7 +230,7 @@ class SM4Cipher(SymmetricCipher):
             decryptor = cipher.decryptor()
             plaintext = decryptor.update(actual_ciphertext) + decryptor.finalize()
 
-            if self.padding != Padding.NONE:  # 只要不是NONE填充，都需要去填充
+            if self.padding != Padding.NONE:  # 只要不是NONE填充, 都需要去填充
                 plaintext = self._unpad_data(plaintext)
 
             return plaintext

@@ -64,7 +64,7 @@ class KeyManager:
         """保存密钥库"""
         with open(self.keystore_path, "w") as f:
             json.dump(self.keystore, f, indent=2)
-        # 设置文件权限（仅限 UNIX 系统）
+        # 设置文件权限 (仅限 UNIX 系统)
         if os.name == "posix":
             os.chmod(self.keystore_path, 0o600)
 
@@ -74,7 +74,7 @@ class KeyManager:
 
         Args:
             password: 用户密码
-            salt: 可选的盐值，如果未提供则生成新的
+            salt: 可选的盐值, 如果未提供则生成新的
 
         Returns:
             (key, salt): 派生的密钥和使用的盐值
@@ -138,7 +138,7 @@ class KeyManager:
             "public_key": base64.b64encode(public_pem).decode("utf-8"),
         }
 
-        # 如果提供了密码，加密私钥
+        # 如果提供了密码, 加密私钥
         if password:
             key, salt = self._derive_key(password)
             fernet = Fernet(key)
@@ -199,7 +199,7 @@ class KeyManager:
         # 加载私钥
         cipher.load_private_key(private_key)
 
-        # 如果未提供公钥，尝试从私钥派生
+        # 如果未提供公钥, 尝试从私钥派生
         if public_key is None:
             # 这里假设加密器在加载私钥后可以访问公钥
             # 实际实现可能需要根据具体加密器调整
@@ -225,7 +225,7 @@ class KeyManager:
             "public_key": base64.b64encode(public_key).decode("utf-8"),
         }
 
-        # 如果提供了密码，加密私钥
+        # 如果提供了密码, 加密私钥
         if password:
             key, salt = self._derive_key(password)
             fernet = Fernet(key)
@@ -310,7 +310,7 @@ class KeyManager:
 
         Args:
             key_id: 密钥ID
-            password: 如果密钥有密码保护，提供密码
+            password: 如果密钥有密码保护, 提供密码
 
         Returns:
             初始化好的加密器实例
@@ -332,7 +332,7 @@ class KeyManager:
         # 加载公钥
         cipher.load_public_key(public_key)
 
-        # 如果有私钥，也加载私钥
+        # 如果有私钥, 也加载私钥
         if "private_key" in key_info:
             private_key_data = base64.b64decode(key_info["private_key"])
 

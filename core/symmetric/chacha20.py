@@ -56,10 +56,10 @@ class ChaCha20Cipher(SymmetricCipher):
             # 获取计数器值
             counter = kwargs.get("counter", 0)  # 默认计数器值为 0
 
-            # 在 PyCryptodome 中，counter 参数需要通过 cipher.seek() 设置
+            # 在 PyCryptodome 中, counter 参数需要通过 cipher.seek() 设置
             cipher = ChaCha20.new(key=key, nonce=nonce)
 
-            # 如果计数器不是0，使用 seek() 设置位置
+            # 如果计数器不是0, 使用 seek() 设置位置
             if counter > 0:
                 cipher.seek(counter)
 
@@ -114,7 +114,7 @@ class ChaCha20Cipher(SymmetricCipher):
             # 创建解密器
             cipher = ChaCha20.new(key=key, nonce=nonce)
 
-            # 如果计数器不是0，使用 seek() 设置位置
+            # 如果计数器不是0, 使用 seek() 设置位置
             if counter > 0:
                 cipher.seek(counter)
 
@@ -133,7 +133,7 @@ class ChaCha20Cipher(SymmetricCipher):
         if isinstance(key, str):
             key = key.encode("utf-8")
 
-        # 如果密钥长度不足，使用填充；如果过长，则截断
+        # 如果密钥长度不足, 使用填充；如果过长, 则截断
         if len(key) < length:
             return key.ljust(length, b"\0")  # 使用0填充
         return key[:length]  # 截断到指定长度

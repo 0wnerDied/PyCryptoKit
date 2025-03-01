@@ -1,9 +1,9 @@
 """
 哈希算法库
 
-提供多种哈希算法的统一接口，包括:
-- MD5 (不安全，仅用于兼容)
-- SHA-1 (不安全，仅用于兼容)
+提供多种哈希算法的统一接口, 包括:
+- MD5 (不安全, 仅用于兼容)
+- SHA-1 (不安全, 仅用于兼容)
 - SHA-2 系列 (SHA-224, SHA-256, SHA-384, SHA-512, SHA-512/224, SHA-512/256)
 - SHA-3 系列 (SHA3-224, SHA3-256, SHA3-384, SHA3-512, SHAKE128, SHAKE256)
 - BLAKE 系列 (BLAKE2b, BLAKE2s, BLAKE3)
@@ -148,7 +148,7 @@ HASH_ALGORITHMS: Dict[str, Tuple[Type[HashBase], bool, str, Dict[str, Any]]] = {
     ),
 }
 
-# 导出所有算法名称，按安全性分组
+# 导出所有算法名称, 按安全性分组
 SECURE_ALGORITHMS: List[str] = [
     name for name, (_, is_secure, _, _) in HASH_ALGORITHMS.items() if is_secure
 ]

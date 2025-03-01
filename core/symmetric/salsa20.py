@@ -27,8 +27,8 @@ class Salsa20Cipher(SymmetricCipher):
 
         Args:
             plaintext: 明文
-            key: 密钥 (32 字节，也支持 16 字节)
-            nonce: 随机数 (8 字节)，如果为 None，则自动生成
+            key: 密钥 (32 字节, 也支持 16 字节)
+            nonce: 随机数 (8 字节), 如果为 None, 则自动生成
             **kwargs: 额外参数
 
         Returns:
@@ -88,7 +88,7 @@ class Salsa20Cipher(SymmetricCipher):
 
         Args:
             ciphertext: 密文
-            key: 密钥 (32 字节，也支持 16 字节)
+            key: 密钥 (32 字节, 也支持 16 字节)
             nonce: 随机数 (如果已包含在密文中则可为 None)
             **kwargs: 额外参数
 
@@ -111,7 +111,7 @@ class Salsa20Cipher(SymmetricCipher):
                 # 从密文中提取 nonce
                 if len(ciphertext) <= self.nonce_length:
                     raise ValueError(
-                        f"密文长度不足，无法提取 {self.nonce_length} 字节的 nonce"
+                        f"密文长度不足, 无法提取 {self.nonce_length} 字节的 nonce"
                     )
 
                 nonce = ciphertext[: self.nonce_length]

@@ -3,7 +3,7 @@ from typing import Tuple, Union
 
 
 class SignatureBase(ABC):
-    """数字签名基类，定义所有签名算法的通用接口"""
+    """数字签名基类, 定义所有签名算法的通用接口"""
 
     @abstractmethod
     def generate_key_pair(self, **kwargs) -> Tuple:

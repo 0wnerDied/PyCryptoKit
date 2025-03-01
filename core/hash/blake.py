@@ -2,7 +2,7 @@
 BLAKE 系列哈希算法实现
 
 提供 BLAKE2b、BLAKE2s 和 BLAKE3 哈希算法的实现。
-BLAKE2b 和 BLAKE2s 基于 cryptography 库，
+BLAKE2b 和 BLAKE2s 基于 cryptography 库, 
 BLAKE3 使用 blake3 库实现。
 """
 
@@ -32,7 +32,7 @@ class BLAKEHash(HashBase):
 
 
 class BLAKE2bHash(BLAKEHash):
-    """BLAKE2b 哈希算法实现，基于 cryptography 库"""
+    """BLAKE2b 哈希算法实现, 基于 cryptography 库"""
 
     @property
     def name(self) -> str:
@@ -140,7 +140,7 @@ class BLAKE2bHash(BLAKEHash):
 
 
 class BLAKE2sHash(BLAKEHash):
-    """BLAKE2s 哈希算法实现，基于 cryptography 库"""
+    """BLAKE2s 哈希算法实现, 基于 cryptography 库"""
 
     @property
     def name(self) -> str:
@@ -248,7 +248,7 @@ class BLAKE2sHash(BLAKEHash):
 
 
 class BLAKE3Hash(BLAKEHash):
-    """BLAKE3 哈希算法实现，使用 blake3 库"""
+    """BLAKE3 哈希算法实现, 使用 blake3 库"""
 
     @property
     def name(self) -> str:

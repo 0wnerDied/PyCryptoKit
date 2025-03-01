@@ -1,7 +1,7 @@
 """
 PyCryptoKit 数字签名模块
 
-提供多种数字签名算法的实现，包括 RSA、ECDSA 等。
+提供多种数字签名算法的实现, 包括 RSA、ECDSA 等。
 """
 
 from typing import Any, Dict, List, Tuple, Type
@@ -17,12 +17,12 @@ from .RSA_sig import RSASignature, RSA_PKCS1v15Signature, RSA_PSSSignature
 SIGNATURE_ALGORITHMS: Dict[str, Tuple[Type[SignatureBase], str, Dict[str, Any]]] = {
     "RSA": (
         RSA_PKCS1v15Signature,
-        "传统 RSA 签名算法，使用 PKCS#1 v1.5 填充",
+        "传统 RSA 签名算法, 使用 PKCS#1 v1.5 填充",
         {"哈希算法": "SHA256"},
     ),
     "RSA-PSS": (
         RSA_PSSSignature,
-        "RSA-PSS 签名算法，使用 PSS 填充",
+        "RSA-PSS 签名算法, 使用 PSS 填充",
         {"哈希算法": "SHA256", "盐长度": 32},
     ),
     "ECDSA": (
@@ -73,7 +73,7 @@ def sign(
         data: 要签名的数据
         key: 私钥数据
         algorithm: 签名算法名称
-        password: 私钥密码（如果需要）
+        password: 私钥密码 (如果需要)
         **kwargs: 其他算法特定参数
 
     Returns:

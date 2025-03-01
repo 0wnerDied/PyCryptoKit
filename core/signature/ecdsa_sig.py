@@ -13,8 +13,8 @@ class ECDSASignature(SignatureBase):
         """初始化 ECDSA 签名类
 
         Args:
-            curve: 椭圆曲线，默认为 SECP256R1
-            hash_algorithm: 哈希算法，默认为 SHA256
+            curve: 椭圆曲线, 默认为 SECP256R1
+            hash_algorithm: 哈希算法, 默认为 SHA256
         """
         self.curve = curve
         self.hash_algorithm = hash_algorithm
@@ -41,14 +41,14 @@ class ECDSASignature(SignatureBase):
         Args:
             data: 要签名的数据
             private_key: ECDSA 私钥或私钥字节数据
-            password: 私钥密码（如果私钥是字节数据且已加密）
+            password: 私钥密码 (如果私钥是字节数据且已加密)
 
         Returns:
             bytes: 签名结果
         """
         data = self._ensure_bytes(data)
 
-        # 如果 private_key 是字节数据，则加载它
+        # 如果 private_key 是字节数据, 则加载它
         if isinstance(private_key, bytes):
             private_key = serialization.load_pem_private_key(
                 private_key, password=password
@@ -72,7 +72,7 @@ class ECDSASignature(SignatureBase):
         """
         data = self._ensure_bytes(data)
 
-        # 如果 public_key 是字节数据，则加载它
+        # 如果 public_key 是字节数据, 则加载它
         if isinstance(public_key, bytes):
             public_key = serialization.load_pem_public_key(public_key)
 
@@ -87,7 +87,7 @@ class ECDSASignature(SignatureBase):
 
         Args:
             path: 私钥文件路径
-            password: 私钥密码，如果有加密
+            password: 私钥密码, 如果有加密
 
         Returns:
             ECDSA 私钥对象
@@ -119,7 +119,7 @@ class ECDSASignature(SignatureBase):
         """确保数据为字节类型
 
         Args:
-            data: 输入数据，可以是字符串或字节
+            data: 输入数据, 可以是字符串或字节
 
         Returns:
             bytes: 字节类型的数据

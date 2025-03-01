@@ -23,7 +23,7 @@ from typing import Optional
 from core.signature import (
     sign,
     list_algorithms as list_signature_algorithms,
-    get_algorithm_info as get_signature_algorithm_info
+    get_algorithm_info as get_signature_algorithm_info,
 )
 
 
@@ -140,7 +140,7 @@ class SignatureView(QWidget):
         password_layout = QHBoxLayout()
         password_layout.addWidget(QLabel("密钥密码:"))
         self.key_password = QLineEdit()
-        self.key_password.setPlaceholderText("如果私钥有密码保护，请在此输入")
+        self.key_password.setPlaceholderText("如果私钥有密码保护, 请在此输入")
         self.key_password.setEchoMode(QLineEdit.Password)
         password_layout.addWidget(self.key_password)
         key_layout.addLayout(password_layout)
@@ -463,7 +463,7 @@ class SignatureView(QWidget):
         sig_text_layout.setContentsMargins(0, 0, 0, 0)
 
         self.sig_input = QTextEdit()
-        self.sig_input.setPlaceholderText("在此输入签名（Base64 或十六进制格式）")
+        self.sig_input.setPlaceholderText("在此输入签名 (Base64 或十六进制格式) ")
         sig_text_layout.addWidget(self.sig_input)
 
         # 签名格式选项

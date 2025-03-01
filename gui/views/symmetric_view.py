@@ -754,12 +754,21 @@ class SymmetricView(QWidget):
         """生成随机密钥"""
         try:
             algorithm = self.algo_combo.currentText()
-            key_size = 32  # 默认256位
 
+            # 根据不同算法生成不同长度的密钥
             if algorithm == "AES":
                 # 根据选择的密钥长度生成
                 key_size_bits = int(self.key_size_combo.currentText())
                 key_size = key_size_bits // 8
+            elif algorithm == "SM4":
+                # SM4 固定使用 128 位 (16 字节) 密钥
+                key_size = 16
+            elif algorithm in ["CHACHA20", "CHACHA20_POLY1305", "SALSA20"]:
+                # CHACHA20 和 SALSA20 系列使用 256 位 (32 字节) 密钥
+                key_size = 32
+            else:
+                # 默认生成 32 字节密钥
+                key_size = 32
 
             import os
 
@@ -787,10 +796,18 @@ class SymmetricView(QWidget):
             mode = self.mode_combo.currentText()
 
             # 确定IV大小
-            iv_size = 16  # 默认16字节 (AES块大小)
-
-            if algorithm in ["CHACHA20", "CHACHA20_POLY1305", "SALSA20"]:
-                iv_size = 12 if algorithm == "CHACHA20_POLY1305" else 8
+            if algorithm in ["AES", "SM4"]:
+                # 块密码使用 128 位 (16 字节) IV
+                iv_size = 16
+            elif algorithm == "CHACHA20_POLY1305":
+                # ChaCha20-Poly1305 使用 96 位 (12 字节) nonce
+                iv_size = 12
+            elif algorithm in ["CHACHA20", "SALSA20"]:
+                # ChaCha20 和 Salsa20 使用 64 位 (8 字节) nonce
+                iv_size = 8
+            else:
+                # 默认使用 16 字节
+                iv_size = 16
 
             import os
 
@@ -881,14 +898,12 @@ class SymmetricView(QWidget):
         """执行加密操作"""
         try:
             # 获取加密参数
-            algorithm = SymmetricAlgorithm(self.algo_combo.currentText())
+            algorithm = self.algo_combo.currentText()  # 直接使用字符串，不转换为枚举
             mode = (
-                Mode(self.mode_combo.currentText())
-                if self.mode_combo.isEnabled()
-                else None
+                self.mode_combo.currentText() if self.mode_combo.isEnabled() else None
             )
             padding = (
-                Padding(self.padding_combo.currentText())
+                self.padding_combo.currentText()
                 if self.padding_combo.isEnabled()
                 else None
             )
@@ -896,10 +911,19 @@ class SymmetricView(QWidget):
             iv = self.get_iv_bytes()
             aad = self.get_aad_bytes()
 
+            # 构建关键字参数字典
+            kwargs = {}
+            if mode:
+                kwargs["mode"] = mode
+            if padding:
+                kwargs["padding"] = padding
+            if aad:
+                kwargs["associated_data"] = aad
+
             # 获取密钥长度 (仅AES需要)
-            key_size = None
-            if algorithm == SymmetricAlgorithm.AES:
+            if algorithm == "AES":
                 key_size = int(self.key_size_combo.currentText())
+                kwargs["key_size"] = key_size
 
             if self.text_radio.isChecked():
                 # 文本模式加密
@@ -919,16 +943,9 @@ class SymmetricView(QWidget):
                     encoding = self.encoding_combo.currentText()
                     data = text.encode(encoding)
 
-                # 执行加密
+                # 执行加密 - 使用正确的参数名称
                 encrypted = encrypt(
-                    data,
-                    key,
-                    algorithm=algorithm,
-                    mode=mode,
-                    padding=padding,
-                    iv=iv,
-                    aad=aad,
-                    key_size=key_size,
+                    algorithm=algorithm, plaintext=data, key=key, iv=iv, **kwargs
                 )
 
                 # 保存结果
@@ -963,16 +980,9 @@ class SymmetricView(QWidget):
                 with open(input_file, "rb") as f:
                     data = f.read()
 
-                # 执行加密
+                # 执行加密 - 使用正确的参数名称
                 encrypted = encrypt(
-                    data,
-                    key,
-                    algorithm=algorithm,
-                    mode=mode,
-                    padding=padding,
-                    iv=iv,
-                    aad=aad,
-                    key_size=key_size,
+                    algorithm=algorithm, plaintext=data, key=key, iv=iv, **kwargs
                 )
 
                 # 写入输出文件
@@ -988,14 +998,16 @@ class SymmetricView(QWidget):
         """执行解密操作"""
         try:
             # 获取解密参数
-            algorithm = SymmetricAlgorithm(self.decrypt_algo_combo.currentText())
+            algorithm = (
+                self.decrypt_algo_combo.currentText()
+            )  # 直接使用字符串，不转换为枚举
             mode = (
-                Mode(self.decrypt_mode_combo.currentText())
+                self.decrypt_mode_combo.currentText()
                 if self.decrypt_mode_combo.isEnabled()
                 else None
             )
             padding = (
-                Padding(self.decrypt_padding_combo.currentText())
+                self.decrypt_padding_combo.currentText()
                 if self.decrypt_padding_combo.isEnabled()
                 else None
             )
@@ -1003,10 +1015,19 @@ class SymmetricView(QWidget):
             iv = self.get_decrypt_iv_bytes()
             aad = self.get_decrypt_aad_bytes()
 
+            # 构建关键字参数字典
+            kwargs = {}
+            if mode:
+                kwargs["mode"] = mode
+            if padding:
+                kwargs["padding"] = padding
+            if aad:
+                kwargs["associated_data"] = aad
+
             # 获取密钥长度 (仅AES需要)
-            key_size = None
-            if algorithm == SymmetricAlgorithm.AES:
+            if algorithm == "AES":
                 key_size = int(self.decrypt_key_size_combo.currentText())
+                kwargs["key_size"] = key_size
 
             if self.decrypt_text_radio.isChecked():
                 # 文本模式解密
@@ -1032,16 +1053,9 @@ class SymmetricView(QWidget):
                         )
                         return
 
-                # 执行解密
+                # 执行解密 - 使用正确的参数名称
                 decrypted = decrypt(
-                    data,
-                    key,
-                    algorithm=algorithm,
-                    mode=mode,
-                    padding=padding,
-                    iv=iv,
-                    aad=aad,
-                    key_size=key_size,
+                    algorithm=algorithm, ciphertext=data, key=key, iv=iv, **kwargs
                 )
 
                 # 保存结果
@@ -1076,16 +1090,9 @@ class SymmetricView(QWidget):
                 with open(input_file, "rb") as f:
                     data = f.read()
 
-                # 执行解密
+                # 执行解密 - 使用正确的参数名称
                 decrypted = decrypt(
-                    data,
-                    key,
-                    algorithm=algorithm,
-                    mode=mode,
-                    padding=padding,
-                    iv=iv,
-                    aad=aad,
-                    key_size=key_size,
+                    algorithm=algorithm, ciphertext=data, key=key, iv=iv, **kwargs
                 )
 
                 # 写入输出文件

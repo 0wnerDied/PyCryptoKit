@@ -8,8 +8,9 @@ MD5 (Message-Digest Algorithm 5) 是一种广泛使用的哈希函数，
 推荐使用 SHA-256 或更安全的哈希算法。
 """
 
-from typing import Union
 from cryptography.hazmat.primitives import hashes
+from typing import Union
+
 from .base import HashBase
 
 

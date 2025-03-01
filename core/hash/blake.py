@@ -7,8 +7,9 @@ BLAKE3 使用 blake3 库实现。
 """
 
 import blake3
-from typing import Union, Optional
 from cryptography.hazmat.primitives import hashes
+from typing import Optional, Union
+
 from .base import HashBase
 
 

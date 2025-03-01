@@ -682,7 +682,7 @@ class SymmetricView(QWidget):
         if algorithm == "SM4":
             # SM4固定使用128位密钥
             self.key_size_combo.setCurrentText("128")
-        elif algorithm in ["CHACHA20", "SALSA20"]:
+        elif algorithm in ["ChaCha20", "Salsa20"]:
             # ChaCha20和Salsa20使用256位密钥
             self.key_size_combo.setCurrentText("256")
         # AES保持用户选择的密钥长度
@@ -720,7 +720,7 @@ class SymmetricView(QWidget):
         self.update_mode_options()
 
         # 流密码特殊处理
-        is_stream_cipher = algorithm in ["CHACHA20", "SALSA20"]
+        is_stream_cipher = algorithm in ["ChaCha20", "Salsa20"]
         if is_stream_cipher:
             self.mode_combo.setEnabled(False)
             self.padding_combo.setEnabled(False)
@@ -768,7 +768,7 @@ class SymmetricView(QWidget):
         if algorithm == "SM4":
             # SM4固定使用128位密钥
             self.decrypt_key_size_combo.setCurrentText("128")
-        elif algorithm in ["CHACHA20", "SALSA20"]:
+        elif algorithm in ["ChaCha20", "Salsa20"]:
             # ChaCha20和Salsa20使用256位密钥
             self.decrypt_key_size_combo.setCurrentText("256")
         # AES保持用户选择的密钥长度
@@ -806,7 +806,7 @@ class SymmetricView(QWidget):
         self.update_decrypt_mode_options()
 
         # 流密码特殊处理
-        is_stream_cipher = algorithm in ["CHACHA20", "SALSA20"]
+        is_stream_cipher = algorithm in ["ChaCha20", "Salsa20"]
         if is_stream_cipher:
             self.decrypt_mode_combo.setEnabled(False)
             self.decrypt_padding_combo.setEnabled(False)
@@ -917,7 +917,7 @@ class SymmetricView(QWidget):
                 key_size = key_size_bits // 8
             elif algorithm == "SM4":
                 key_size = 16
-            elif algorithm in ["CHACHA20", "SALSA20"]:
+            elif algorithm in ["ChaCha20", "Salsa20"]:
                 key_size = 32
             else:
                 key_size = 32
@@ -950,9 +950,9 @@ class SymmetricView(QWidget):
                     iv_size = 12
                 else:
                     iv_size = 16
-            elif algorithm == "CHACHA20":
+            elif algorithm == "ChaCha20":
                 iv_size = 12
-            elif algorithm == "SALSA20":
+            elif algorithm == "Salsa20":
                 iv_size = 8
             else:
                 iv_size = 16

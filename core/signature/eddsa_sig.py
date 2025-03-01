@@ -1,6 +1,6 @@
-from typing import Union, Tuple, Optional
 from Cryptodome.PublicKey import ECC
 from Cryptodome.Signature import eddsa
+from typing import Optional, Tuple, Union
 
 from .base import SignatureBase
 

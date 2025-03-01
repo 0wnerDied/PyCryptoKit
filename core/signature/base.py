@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union, Tuple
+from typing import Tuple, Union
 
 
 class SignatureBase(ABC):

@@ -4,7 +4,8 @@
 提供创建各种哈希算法实例的工厂类和方法
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from .base import HashBase
 from . import HASH_ALGORITHMS, ALL_ALGORITHMS, SECURE_ALGORITHMS
 

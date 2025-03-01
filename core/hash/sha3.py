@@ -8,8 +8,9 @@ SHA3 (Secure Hash Algorithm 3) 是由 NIST 于 2015 年标准化的哈希函数�
 基于 Keccak 算法。
 """
 
-from typing import Union
 from cryptography.hazmat.primitives import hashes
+from typing import Union
+
 from .base import HashBase
 
 

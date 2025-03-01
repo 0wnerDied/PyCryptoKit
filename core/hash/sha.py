@@ -8,8 +8,9 @@ SHA 系列哈希算法实现
 推荐使用 SHA256 或更高级别的哈希算法。
 """
 
-from typing import Union
 from cryptography.hazmat.primitives import hashes
+from typing import Union
+
 from .base import HashBase
 
 

@@ -4,9 +4,9 @@
 提供创建各种签名算法实例的工厂类和方法
 """
 
-from typing import Dict, Any, List, Type
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
+from typing import Any, Dict, List, Type
 
 from .base import SignatureBase
 from . import SIGNATURE_ALGORITHMS, ALL_ALGORITHMS

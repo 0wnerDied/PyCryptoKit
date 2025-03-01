@@ -10,12 +10,13 @@
 - SM3 (国密算法)
 """
 
-from typing import Dict, Type, Any, List, Tuple
+from typing import Any, Dict, List, Tuple, Type
 
 # 导入所有哈希算法实现
 from .base import HashBase
-from .md5 import MD5Hash
-from .sha import (
+from .BLAKE import BLAKE2bHash, BLAKE2sHash, BLAKE3Hash
+from .MD5 import MD5Hash
+from .SHA import (
     SHA1Hash,
     SHA224Hash,
     SHA256Hash,
@@ -24,7 +25,7 @@ from .sha import (
     SHA512_224Hash,
     SHA512_256Hash,
 )
-from .sha3 import (
+from .SHA3 import (
     SHA3_224Hash,
     SHA3_256Hash,
     SHA3_384Hash,
@@ -32,8 +33,7 @@ from .sha3 import (
     SHAKE128Hash,
     SHAKE256Hash,
 )
-from .blake import BLAKE2bHash, BLAKE2sHash, BLAKE3Hash
-from .sm3 import SM3Hash
+from .SM3 import SM3Hash
 
 # 算法注册表
 # 格式: {算法名称: (算法类, 是否安全, 描述, 默认参数)}

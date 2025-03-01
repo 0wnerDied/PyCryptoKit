@@ -1,7 +1,7 @@
-from typing import Union, Tuple, Optional, Literal
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from typing import Literal, Optional, Tuple, Union
 
 from .base import SignatureBase
 

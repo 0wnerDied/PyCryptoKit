@@ -297,7 +297,7 @@ class ECCCipher:
         使用ECIES解密数据
 
         Args:
-            encrypted_data: 包含加密数据的字典, 应包含：
+            encrypted_data: 包含加密数据的字典, 应包含: 
                 - ephemeral_public_key: 临时公钥字节
                 - salt: 盐值
                 - iv: 初始化向量

@@ -20,9 +20,7 @@ class ChaCha20Cipher(SymmetricCipher):
         """
         self.use_poly1305 = use_poly1305
         self.key_length = 32  # ChaCha20 使用 256 位密钥 (32 字节)
-        self.nonce_length = (
-            12 if use_poly1305 else 8
-        )  # ChaCha20-Poly1305 使用 12 字节 nonce，普通 ChaCha20 使用 8 字节
+        self.nonce_length = 12
 
     def encrypt(
         self,
@@ -37,7 +35,7 @@ class ChaCha20Cipher(SymmetricCipher):
         Args:
             plaintext: 明文
             key: 密钥 (32 字节)
-            nonce: 随机数 (ChaCha20: 8 字节, ChaCha20-Poly1305: 12 字节)
+            nonce: 随机数 (12 字节)
                    如果为 None，则自动生成
             **kwargs:
                 - counter: ChaCha20 初始计数值 (默认为 0)
@@ -45,7 +43,7 @@ class ChaCha20Cipher(SymmetricCipher):
 
         Returns:
             bytes: 加密后的密文
-                  对于 ChaCha20: nonce (8 bytes) + ciphertext
+                  对于 ChaCha20: nonce (12 bytes) + ciphertext
                   对于 ChaCha20-Poly1305: nonce (12 bytes) + tag (16 bytes) + ciphertext
         """
         # 处理输入
@@ -82,7 +80,7 @@ class ChaCha20Cipher(SymmetricCipher):
                 ciphertext, tag = cipher.encrypt_and_digest(plaintext)
 
                 # 返回 nonce + tag + ciphertext
-                return b"".join([nonce, tag, ciphertext])
+                return b"".join([tag, ciphertext])
             else:
                 # 普通 ChaCha20 模式
                 # 获取计数器值，但不传递给 ChaCha20.new()
@@ -98,7 +96,7 @@ class ChaCha20Cipher(SymmetricCipher):
                 ciphertext = cipher.encrypt(plaintext)
 
                 # 返回 nonce + ciphertext
-                return b"".join([nonce, ciphertext])
+                return ciphertext
 
         except ValueError as e:
             raise ValueError(f"ChaCha20 加密参数错误: {str(e)}")

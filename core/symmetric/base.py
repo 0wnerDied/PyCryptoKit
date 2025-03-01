@@ -27,6 +27,9 @@ class Algorithm(Enum):
 
     AES = "AES"
     SM4 = "SM4"
+    CHACHA20 = "CHACHA20"
+    CHACHA20_POLY1305 = "CHACHA20_POLY1305"
+    SALSA20 = "SALSA20"
 
 
 class SymmetricCipher(ABC):

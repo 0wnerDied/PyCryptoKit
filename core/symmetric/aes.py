@@ -108,22 +108,21 @@ class AESCipher(SymmetricCipher):
                         f"无填充模式下，数据长度必须是{self.block_size}的整数倍"
                     )
 
-        # 创建加密器
         try:
+            # 创建加密器
             mode_value = self.mode_map[self.mode]
+
             if self.mode == Mode.ECB:
                 cipher = AES.new(key, mode_value)
             elif self.mode == Mode.CTR:
-                # CTR模式可以使用nonce参数
-                nonce = kwargs.get("nonce")
-                if nonce is not None:
-                    if isinstance(nonce, str):
-                        nonce = nonce.encode("utf-8")
-                    cipher = AES.new(key, mode_value, nonce=nonce[:8])
-                else:
-                    cipher = AES.new(key, mode_value, nonce=iv[:8])
+                # 对CTR模式进行特殊处理
+                cipher = AES.new(key, mode_value, nonce=iv[:8])
             elif self.mode == Mode.GCM:
                 cipher = AES.new(key, mode_value, nonce=iv)
+            elif self.mode == Mode.CFB:
+                # 默认使用8位分段大小
+                segment_size = kwargs.get("segment_size", 8)
+                cipher = AES.new(key, mode_value, iv=iv, segment_size=segment_size)
             else:
                 cipher = AES.new(key, mode_value, iv=iv)
 
@@ -135,6 +134,7 @@ class AESCipher(SymmetricCipher):
                         associated_data = associated_data.encode("utf-8")
                     cipher.update(associated_data)
                 ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+                # 将nonce、tag和密文一起返回
                 return b"".join([iv, tag, ciphertext])
 
             # 普通加密
@@ -143,14 +143,19 @@ class AESCipher(SymmetricCipher):
             # 对于需要IV的模式，将IV与密文一起返回
             if iv_required and self.mode != Mode.GCM:
                 if self.mode == Mode.CTR:
+                    # CTR模式返回完整的nonce和密文
                     return b"".join([cipher.nonce, ciphertext])
                 else:
                     return b"".join([iv, ciphertext])
 
             return ciphertext
 
+        except ValueError as e:
+            raise ValueError(f"AES加密参数错误: {str(e)}")
+        except TypeError as e:
+            raise TypeError(f"AES加密类型错误: {str(e)}")
         except Exception as e:
-            raise ValueError(f"AES加密失败: {str(e)}")
+            raise RuntimeError(f"AES加密未知错误: {str(e)}")
 
     def decrypt(
         self,
@@ -220,6 +225,18 @@ class AESCipher(SymmetricCipher):
                         else:
                             nonce = iv[:8]
                     cipher = AES.new(key, self.mode_map[self.mode], nonce=nonce)
+                elif self.mode == Mode.CFB:
+                    # 默认使用8位分段大小
+                    segment_size = kwargs.get("segment_size", 8)
+                    if iv is None:
+                        # 从密文中提取IV
+                        iv, ciphertext = ciphertext[:16], ciphertext[16:]
+                    elif isinstance(iv, str):
+                        iv = iv.encode("utf-8")
+                        iv = iv[:16].ljust(16, b"\0")
+                    cipher = AES.new(
+                        key, self.mode_map[self.mode], iv=iv, segment_size=segment_size
+                    )
                 else:
                     # 其他需要IV的模式
                     if iv is None:
@@ -250,5 +267,19 @@ class AESCipher(SymmetricCipher):
 
             return plaintext
 
+        except ValueError as e:
+            raise ValueError(f"AES解密参数错误: {str(e)}")
+        except TypeError as e:
+            raise TypeError(f"AES解密类型错误: {str(e)}")
         except Exception as e:
-            raise ValueError(f"AES解密失败: {str(e)}")
+            raise RuntimeError(f"AES解密未知错误: {str(e)}")
+
+    def normalize_key(self, key: Union[str, bytes], length: int) -> bytes:
+        """标准化密钥长度"""
+        if isinstance(key, str):
+            key = key.encode("utf-8")
+
+        # 如果密钥长度不足，使用填充；如果过长，则截断
+        if len(key) < length:
+            return key.ljust(length, b"\0")  # 使用0填充
+        return key[:length]  # 截断到指定长度

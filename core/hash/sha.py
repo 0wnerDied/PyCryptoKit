@@ -2,13 +2,13 @@
 SHA 系列哈希算法实现
 
 提供 SHA1、SHA224、SHA256、SHA384、SHA512、SHA512_224 和 SHA512_256 哈希算法实现。
-所有实现基于 cryptography 库。
+所有实现基于 Python 标准库 hashlib, 提供最佳性能。
 
 注意: SHA1 已被证明不再安全, 不应用于安全场景。
 推荐使用 SHA256 或更高级别的哈希算法。
 """
 
-from cryptography.hazmat.primitives import hashes
+import hashlib
 from typing import Union
 
 from .base import HashBase
@@ -17,22 +17,36 @@ from .base import HashBase
 class SHAHash(HashBase):
     """SHA 哈希算法基类"""
 
-    def __init__(self, algorithm):
-        """
-        初始化 SHA 哈希对象
+    # 子类需要覆盖这些属性
+    _algorithm_name = None
+    _digest_size = None
+    _block_size = None
 
-        Args:
-            algorithm: cryptography 库中的哈希算法实例
-        """
-        self._algorithm = algorithm
-        self._hash = hashes.Hash(self._algorithm)
+    @property
+    def name(self) -> str:
+        return self._algorithm_name
 
-    def update(self, data: Union[str, bytes, bytearray, memoryview]) -> None:
+    @property
+    def digest_size(self) -> int:
+        return self._digest_size
+
+    @property
+    def block_size(self) -> int:
+        return self._block_size
+
+    def __init__(self):
+        """初始化 SHA 哈希对象"""
+        self.reset()
+
+    def update(self, data: Union[str, bytes, bytearray, memoryview]) -> "SHAHash":
         """
         更新哈希对象的状态
 
         Args:
             data: 要添加到哈希计算中的数据
+
+        Returns:
+            self: 支持链式调用
 
         Raises:
             TypeError: 如果数据类型不受支持
@@ -40,6 +54,7 @@ class SHAHash(HashBase):
         if isinstance(data, str):
             data = data.encode("utf-8")
         self._hash.update(data)
+        return self
 
     def digest(self) -> bytes:
         """
@@ -48,8 +63,7 @@ class SHAHash(HashBase):
         Returns:
             bytes: 哈希摘要
         """
-        hash_copy = self._hash.copy()
-        return hash_copy.finalize()
+        return self._hash.digest()
 
     def hexdigest(self) -> str:
         """
@@ -58,31 +72,19 @@ class SHAHash(HashBase):
         Returns:
             str: 十六进制格式的哈希摘要
         """
-        return self.digest().hex()
+        return self._hash.hexdigest()
 
     def reset(self) -> None:
         """重置哈希对象的状态"""
-        self._hash = hashes.Hash(self._algorithm)
+        self._hash = getattr(hashlib, self._algorithm_name.lower())()
 
 
 class SHA1Hash(SHAHash):
     """SHA-1 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA1"
-
-    @property
-    def digest_size(self) -> int:
-        return 20
-
-    @property
-    def block_size(self) -> int:
-        return 64
-
-    def __init__(self):
-        """初始化 SHA1 哈希对象"""
-        super().__init__(hashes.SHA1())
+    _algorithm_name = "SHA1"
+    _digest_size = 20
+    _block_size = 64
 
     def copy(self) -> "SHA1Hash":
         """
@@ -99,21 +101,9 @@ class SHA1Hash(SHAHash):
 class SHA224Hash(SHAHash):
     """SHA224 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA224"
-
-    @property
-    def digest_size(self) -> int:
-        return 28
-
-    @property
-    def block_size(self) -> int:
-        return 64
-
-    def __init__(self):
-        """初始化 SHA224 哈希对象"""
-        super().__init__(hashes.SHA224())
+    _algorithm_name = "SHA224"
+    _digest_size = 28
+    _block_size = 64
 
     def copy(self) -> "SHA224Hash":
         """
@@ -130,21 +120,9 @@ class SHA224Hash(SHAHash):
 class SHA256Hash(SHAHash):
     """SHA256 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA256"
-
-    @property
-    def digest_size(self) -> int:
-        return 32
-
-    @property
-    def block_size(self) -> int:
-        return 64
-
-    def __init__(self):
-        """初始化 SHA256 哈希对象"""
-        super().__init__(hashes.SHA256())
+    _algorithm_name = "SHA256"
+    _digest_size = 32
+    _block_size = 64
 
     def copy(self) -> "SHA256Hash":
         """
@@ -161,21 +139,9 @@ class SHA256Hash(SHAHash):
 class SHA384Hash(SHAHash):
     """SHA384 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA384"
-
-    @property
-    def digest_size(self) -> int:
-        return 48
-
-    @property
-    def block_size(self) -> int:
-        return 128
-
-    def __init__(self):
-        """初始化 SHA384 哈希对象"""
-        super().__init__(hashes.SHA384())
+    _algorithm_name = "SHA384"
+    _digest_size = 48
+    _block_size = 128
 
     def copy(self) -> "SHA384Hash":
         """
@@ -192,21 +158,9 @@ class SHA384Hash(SHAHash):
 class SHA512Hash(SHAHash):
     """SHA512 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA512"
-
-    @property
-    def digest_size(self) -> int:
-        return 64
-
-    @property
-    def block_size(self) -> int:
-        return 128
-
-    def __init__(self):
-        """初始化 SHA512 哈希对象"""
-        super().__init__(hashes.SHA512())
+    _algorithm_name = "SHA512"
+    _digest_size = 64
+    _block_size = 128
 
     def copy(self) -> "SHA512Hash":
         """
@@ -223,21 +177,9 @@ class SHA512Hash(SHAHash):
 class SHA512_224Hash(SHAHash):
     """SHA512_224 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA512_224"
-
-    @property
-    def digest_size(self) -> int:
-        return 28
-
-    @property
-    def block_size(self) -> int:
-        return 128
-
-    def __init__(self):
-        """初始化 SHA512_224 哈希对象"""
-        super().__init__(hashes.SHA512_224())
+    _algorithm_name = "SHA512_224"
+    _digest_size = 28
+    _block_size = 128
 
     def copy(self) -> "SHA512_224Hash":
         """
@@ -254,21 +196,9 @@ class SHA512_224Hash(SHAHash):
 class SHA512_256Hash(SHAHash):
     """SHA512_256 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA512_256"
-
-    @property
-    def digest_size(self) -> int:
-        return 32
-
-    @property
-    def block_size(self) -> int:
-        return 128
-
-    def __init__(self):
-        """初始化 SHA512_256 哈希对象"""
-        super().__init__(hashes.SHA512_256())
+    _algorithm_name = "SHA512_256"
+    _digest_size = 32
+    _block_size = 128
 
     def copy(self) -> "SHA512_256Hash":
         """

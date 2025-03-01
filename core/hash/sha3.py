@@ -2,13 +2,13 @@
 SHA3 系列哈希算法实现
 
 提供 SHA3_224、SHA3_256、SHA3_384、SHA3_512、SHAKE128 和 SHAKE256 哈希算法实现。
-所有实现基于 cryptography 库。
+所有实现基于 Python 标准库 hashlib, 提供最佳性能。
 
 SHA3 (Secure Hash Algorithm 3) 是由 NIST 于 2015 年标准化的哈希函数家族, 
 基于 Keccak 算法。
 """
 
-from cryptography.hazmat.primitives import hashes
+import hashlib
 from typing import Union
 
 from .base import HashBase
@@ -17,22 +17,36 @@ from .base import HashBase
 class SHA3Hash(HashBase):
     """SHA3 哈希算法基类"""
 
-    def __init__(self, algorithm):
-        """
-        初始化 SHA3 哈希对象
+    # 子类需要覆盖这些属性
+    _algorithm_name = None
+    _digest_size = None
+    _block_size = None
 
-        Args:
-            algorithm: cryptography 库中的哈希算法实例
-        """
-        self._algorithm = algorithm
-        self._hash = hashes.Hash(self._algorithm)
+    @property
+    def name(self) -> str:
+        return self._algorithm_name
 
-    def update(self, data: Union[str, bytes, bytearray, memoryview]) -> None:
+    @property
+    def digest_size(self) -> int:
+        return self._digest_size
+
+    @property
+    def block_size(self) -> int:
+        return self._block_size
+
+    def __init__(self):
+        """初始化 SHA3 哈希对象"""
+        self.reset()
+
+    def update(self, data: Union[str, bytes, bytearray, memoryview]) -> "SHA3Hash":
         """
         更新哈希对象的状态
 
         Args:
             data: 要添加到哈希计算中的数据
+
+        Returns:
+            self: 支持链式调用
 
         Raises:
             TypeError: 如果数据类型不受支持
@@ -40,6 +54,7 @@ class SHA3Hash(HashBase):
         if isinstance(data, str):
             data = data.encode("utf-8")
         self._hash.update(data)
+        return self
 
     def digest(self) -> bytes:
         """
@@ -48,8 +63,7 @@ class SHA3Hash(HashBase):
         Returns:
             bytes: 哈希摘要
         """
-        hash_copy = self._hash.copy()
-        return hash_copy.finalize()
+        return self._hash.digest()
 
     def hexdigest(self) -> str:
         """
@@ -58,31 +72,19 @@ class SHA3Hash(HashBase):
         Returns:
             str: 十六进制格式的哈希摘要
         """
-        return self.digest().hex()
+        return self._hash.hexdigest()
 
     def reset(self) -> None:
         """重置哈希对象的状态"""
-        self._hash = hashes.Hash(self._algorithm)
+        self._hash = getattr(hashlib, self._algorithm_name.lower())()
 
 
 class SHA3_224Hash(SHA3Hash):
     """SHA3_224 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA3_224"
-
-    @property
-    def digest_size(self) -> int:
-        return 28
-
-    @property
-    def block_size(self) -> int:
-        return 144
-
-    def __init__(self):
-        """初始化 SHA3_224 哈希对象"""
-        super().__init__(hashes.SHA3_224())
+    _algorithm_name = "SHA3_224"
+    _digest_size = 28
+    _block_size = 144
 
     def copy(self) -> "SHA3_224Hash":
         """
@@ -99,21 +101,9 @@ class SHA3_224Hash(SHA3Hash):
 class SHA3_256Hash(SHA3Hash):
     """SHA3_256 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA3_256"
-
-    @property
-    def digest_size(self) -> int:
-        return 32
-
-    @property
-    def block_size(self) -> int:
-        return 136
-
-    def __init__(self):
-        """初始化 SHA3_256 哈希对象"""
-        super().__init__(hashes.SHA3_256())
+    _algorithm_name = "SHA3_256"
+    _digest_size = 32
+    _block_size = 136
 
     def copy(self) -> "SHA3_256Hash":
         """
@@ -130,21 +120,9 @@ class SHA3_256Hash(SHA3Hash):
 class SHA3_384Hash(SHA3Hash):
     """SHA3_384 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA3_384"
-
-    @property
-    def digest_size(self) -> int:
-        return 48
-
-    @property
-    def block_size(self) -> int:
-        return 104
-
-    def __init__(self):
-        """初始化 SHA3_384 哈希对象"""
-        super().__init__(hashes.SHA3_384())
+    _algorithm_name = "SHA3_384"
+    _digest_size = 48
+    _block_size = 104
 
     def copy(self) -> "SHA3_384Hash":
         """
@@ -161,21 +139,9 @@ class SHA3_384Hash(SHA3Hash):
 class SHA3_512Hash(SHA3Hash):
     """SHA3_512 哈希算法实现"""
 
-    @property
-    def name(self) -> str:
-        return "SHA3_512"
-
-    @property
-    def digest_size(self) -> int:
-        return 64
-
-    @property
-    def block_size(self) -> int:
-        return 72
-
-    def __init__(self):
-        """初始化 SHA3_512 哈希对象"""
-        super().__init__(hashes.SHA3_512())
+    _algorithm_name = "SHA3_512"
+    _digest_size = 64
+    _block_size = 72
 
     def copy(self) -> "SHA3_512Hash":
         """
@@ -189,21 +155,39 @@ class SHA3_512Hash(SHA3Hash):
         return new_hash
 
 
-class SHAKE128Hash(SHA3Hash):
-    """SHAKE128 可扩展输出哈希函数实现"""
+class SHAKEHash(SHA3Hash):
+    """SHAKE 可扩展输出哈希函数基类"""
 
-    @property
-    def name(self) -> str:
-        return "SHAKE128"
+    def __init__(self, digest_size: int):
+        """
+        初始化 SHAKE 哈希对象
+
+        Args:
+            digest_size: 输出摘要的字节长度
+        """
+        self._custom_digest_size = digest_size
+        self.reset()
+
+    def reset(self) -> None:
+        """重置哈希对象的状态"""
+        self._hash = getattr(hashlib, self._algorithm_name.lower())(
+            self._custom_digest_size
+        )
 
     @property
     def digest_size(self) -> int:
-        # SHAKE128 没有固定的摘要大小, 默认为 16 字节
-        return 16
+        return self._custom_digest_size
+
+
+class SHAKE128Hash(SHAKEHash):
+    """SHAKE128 可扩展输出哈希函数实现"""
+
+    _algorithm_name = "SHAKE_128"
+    _block_size = 168
 
     @property
-    def block_size(self) -> int:
-        return 168
+    def name(self) -> str:
+        return f"{self._algorithm_name}_{self._custom_digest_size * 8}"
 
     def __init__(self, digest_size: int = 16):
         """
@@ -212,8 +196,7 @@ class SHAKE128Hash(SHA3Hash):
         Args:
             digest_size: 输出摘要的字节长度, 默认为 16
         """
-        self._digest_size = digest_size
-        super().__init__(hashes.SHAKE128(digest_size))
+        super().__init__(digest_size)
 
     def copy(self) -> "SHAKE128Hash":
         """
@@ -222,26 +205,20 @@ class SHAKE128Hash(SHA3Hash):
         Returns:
             SHAKE128Hash: 当前哈希对象的副本
         """
-        new_hash = SHAKE128Hash(self._digest_size)
+        new_hash = SHAKE128Hash(self._custom_digest_size)
         new_hash._hash = self._hash.copy()
         return new_hash
 
 
-class SHAKE256Hash(SHA3Hash):
+class SHAKE256Hash(SHAKEHash):
     """SHAKE256 可扩展输出哈希函数实现"""
+
+    _algorithm_name = "SHAKE_256"
+    _block_size = 136
 
     @property
     def name(self) -> str:
-        return "SHAKE256"
-
-    @property
-    def digest_size(self) -> int:
-        # SHAKE256 没有固定的摘要大小, 默认为 32 字节
-        return 32
-
-    @property
-    def block_size(self) -> int:
-        return 136
+        return f"{self._algorithm_name}_{self._custom_digest_size * 8}"
 
     def __init__(self, digest_size: int = 32):
         """
@@ -250,8 +227,7 @@ class SHAKE256Hash(SHA3Hash):
         Args:
             digest_size: 输出摘要的字节长度, 默认为 32
         """
-        self._digest_size = digest_size
-        super().__init__(hashes.SHAKE256(digest_size))
+        super().__init__(digest_size)
 
     def copy(self) -> "SHAKE256Hash":
         """
@@ -260,6 +236,6 @@ class SHAKE256Hash(SHA3Hash):
         Returns:
             SHAKE256Hash: 当前哈希对象的副本
         """
-        new_hash = SHAKE256Hash(self._digest_size)
+        new_hash = SHAKE256Hash(self._custom_digest_size)
         new_hash._hash = self._hash.copy()
         return new_hash

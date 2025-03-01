@@ -8,7 +8,7 @@ MD5 (Message-Digest Algorithm 5) 是一种广泛使用的哈希函数,
 推荐使用 SHA-256 或更安全的哈希算法。
 """
 
-from cryptography.hazmat.primitives import hashes
+import hashlib
 from typing import Union
 
 from .base import HashBase
@@ -18,7 +18,7 @@ class MD5Hash(HashBase):
     """
     MD5 哈希算法实现类
 
-    基于 cryptography 库的 MD5 实现
+    基于 Python 标准库 hashlib 的高性能 MD5 实现
     """
 
     @property
@@ -35,15 +35,17 @@ class MD5Hash(HashBase):
 
     def __init__(self):
         """初始化 MD5 哈希对象"""
-        self._algorithm = hashes.MD5()
-        self._hash = hashes.Hash(self._algorithm)
+        self.reset()
 
-    def update(self, data: Union[str, bytes, bytearray, memoryview]) -> None:
+    def update(self, data: Union[str, bytes, bytearray, memoryview]) -> "MD5Hash":
         """
         更新哈希对象的状态
 
         Args:
             data: 要添加到哈希计算中的数据
+
+        Returns:
+            self: 支持链式调用
 
         Raises:
             TypeError: 如果数据类型不受支持
@@ -51,6 +53,7 @@ class MD5Hash(HashBase):
         if isinstance(data, str):
             data = data.encode("utf-8")
         self._hash.update(data)
+        return self
 
     def digest(self) -> bytes:
         """
@@ -59,8 +62,7 @@ class MD5Hash(HashBase):
         Returns:
             bytes: 哈希摘要
         """
-        hash_copy = self._hash.copy()
-        return hash_copy.finalize()
+        return self._hash.digest()
 
     def hexdigest(self) -> str:
         """
@@ -69,7 +71,7 @@ class MD5Hash(HashBase):
         Returns:
             str: 十六进制格式的哈希摘要
         """
-        return self.digest().hex()
+        return self._hash.hexdigest()
 
     def copy(self) -> "MD5Hash":
         """
@@ -84,4 +86,4 @@ class MD5Hash(HashBase):
 
     def reset(self) -> None:
         """重置哈希对象的状态"""
-        self._hash = hashes.Hash(self._algorithm)
+        self._hash = hashlib.md5()

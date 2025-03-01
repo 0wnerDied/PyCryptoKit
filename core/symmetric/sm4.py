@@ -105,7 +105,7 @@ class SM4Cipher(SymmetricCipher):
         plaintext: Union[str, bytes],
         key: Union[str, bytes],
         iv: Optional[Union[str, bytes]] = None,
-        include_iv: bool = True,
+        include_iv: bool = False,
         **kwargs,
     ) -> Union[bytes, Tuple[bytes, bytes]]:
         """
@@ -184,7 +184,7 @@ class SM4Cipher(SymmetricCipher):
         ciphertext: bytes,
         key: Union[str, bytes],
         iv: Optional[Union[str, bytes]] = None,
-        iv_included: bool = True,  # 新增参数：密文中是否包含IV
+        iv_included: bool = False,  # 新增参数：密文中是否包含IV
         **kwargs,
     ) -> bytes:
         """

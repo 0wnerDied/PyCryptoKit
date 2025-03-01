@@ -1,21 +1,35 @@
 from typing import Union, Tuple, Optional
 import os
-from cryptography.hazmat.primitives.asymmetric import ed25519
-from cryptography.hazmat.primitives import serialization
-from cryptography.exceptions import InvalidSignature
+from Cryptodome.PublicKey import ECC
+from Cryptodome.Signature import eddsa
+from Cryptodome.Hash import SHA512, SHAKE256
 
 from .base import SignatureBase
 
 
 class EdDSASignature(SignatureBase):
-    """EdDSA 签名实现类（使用 Ed25519 算法）"""
+    """EdDSA 签名实现类（支持 Ed25519 和 Ed448 算法）"""
 
-    def __init__(self):
+    def __init__(self, curve: str = "Ed25519"):
         """初始化 EdDSA 签名类
 
-        注意：与 ECDSA 不同, Ed25519 不需要指定曲线和哈希算法参数
+        Args:
+            curve: 曲线类型，可选 "Ed25519"（默认）或 "Ed448"
         """
-        pass
+        if curve not in ("Ed25519", "Ed448"):
+            raise ValueError("曲线类型必须是 Ed25519 或 Ed448")
+        self.curve = curve
+        self.context = b""  # RFC8032 上下文，默认为空
+
+    def set_context(self, context: bytes) -> None:
+        """设置签名上下文
+
+        Args:
+            context: 最多 255 字节的上下文数据，用于区分不同协议或应用
+        """
+        if len(context) > 255:
+            raise ValueError("上下文数据不能超过 255 字节")
+        self.context = context
 
     def generate_key_pair(self, **kwargs) -> Tuple:
         """生成 EdDSA 密钥对
@@ -23,23 +37,22 @@ class EdDSASignature(SignatureBase):
         Returns:
             Tuple: (私钥, 公钥)
         """
-        private_key = ed25519.Ed25519PrivateKey.generate()
-        public_key = private_key.public_key()
-        return private_key, public_key
+        key = ECC.generate(curve=self.curve)
+        return key, key.public_key()
 
     def sign(
         self,
         data: Union[bytes, str],
         private_key,
         password: Optional[bytes] = None,
-        **kwargs
+        **kwargs,
     ) -> bytes:
         """使用 EdDSA 私钥对数据进行签名
 
         Args:
             data: 要签名的数据
-            private_key: EdDSA 私钥或私钥字节数据
-            password: 私钥密码（如果私钥是字节数据且已加密）
+            private_key: EdDSA 私钥对象或 PEM 格式的私钥字节数据
+            password: 私钥密码（如果私钥是 PEM 格式且已加密）
 
         Returns:
             bytes: 签名结果
@@ -48,11 +61,11 @@ class EdDSASignature(SignatureBase):
 
         # 如果 private_key 是字节数据，则加载它
         if isinstance(private_key, bytes):
-            private_key = serialization.load_pem_private_key(
-                private_key, password=password
-            )
+            private_key = ECC.import_key(private_key, passphrase=password)
 
-        signature = private_key.sign(data)
+        # 创建签名对象并签名
+        signer = eddsa.new(private_key, mode="rfc8032", context=self.context)
+        signature = signer.sign(data)
         return signature
 
     def verify(
@@ -63,7 +76,7 @@ class EdDSASignature(SignatureBase):
         Args:
             data: 原始数据
             signature: 签名
-            public_key: EdDSA 公钥或公钥字节数据
+            public_key: EdDSA 公钥对象或 PEM 格式的公钥字节数据
 
         Returns:
             bool: 验证是否通过
@@ -72,12 +85,14 @@ class EdDSASignature(SignatureBase):
 
         # 如果 public_key 是字节数据，则加载它
         if isinstance(public_key, bytes):
-            public_key = serialization.load_pem_public_key(public_key)
+            public_key = ECC.import_key(public_key)
 
+        # 创建验证对象并验证
+        verifier = eddsa.new(public_key, mode="rfc8032", context=self.context)
         try:
-            public_key.verify(signature, data)
+            verifier.verify(data, signature)
             return True
-        except InvalidSignature:
+        except ValueError:
             return False
 
     def save_key_pair(
@@ -105,22 +120,17 @@ class EdDSASignature(SignatureBase):
         os.makedirs(os.path.dirname(public_path), exist_ok=True)
 
         # 序列化私钥
-        encryption = (
-            serialization.BestAvailableEncryption(password)
-            if password
-            else serialization.NoEncryption()
-        )
-        private_bytes = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=encryption,
-        )
+        if password:
+            private_bytes = private_key.export_key(
+                format="PEM",
+                passphrase=password,
+                protection="PBKDF2WithHMAC-SHA1AndAES256-CBC",
+            )
+        else:
+            private_bytes = private_key.export_key(format="PEM")
 
         # 序列化公钥
-        public_bytes = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
+        public_bytes = public_key.export_key(format="PEM")
 
         # 写入文件
         with open(private_path, "wb") as f:
@@ -144,9 +154,14 @@ class EdDSASignature(SignatureBase):
         with open(path, "rb") as f:
             private_bytes = f.read()
 
-        private_key = serialization.load_pem_private_key(
-            private_bytes, password=password
-        )
+        private_key = ECC.import_key(private_bytes, passphrase=password)
+
+        # 验证曲线类型
+        if private_key.curve != self.curve:
+            raise ValueError(
+                f"导入的密钥曲线类型 {private_key.curve} 与当前设置的 {self.curve} 不匹配"
+            )
+
         return private_key
 
     def load_public_key(self, path: str, **kwargs):
@@ -161,7 +176,110 @@ class EdDSASignature(SignatureBase):
         with open(path, "rb") as f:
             public_bytes = f.read()
 
-        public_key = serialization.load_pem_public_key(public_bytes)
+        public_key = ECC.import_key(public_bytes)
+
+        # 验证曲线类型
+        if public_key.curve != self.curve:
+            raise ValueError(
+                f"导入的密钥曲线类型 {public_key.curve} 与当前设置的 {self.curve} 不匹配"
+            )
+
+        return public_key
+
+    def export_private_key(
+        self, private_key, password: Optional[bytes] = None
+    ) -> bytes:
+        """导出私钥为 PEM 格式
+
+        Args:
+            private_key: EdDSA 私钥对象
+            password: 加密密码，可选
+
+        Returns:
+            bytes: PEM 格式的私钥
+        """
+        if password:
+            return private_key.export_key(
+                format="PEM",
+                passphrase=password,
+                protection="PBKDF2WithHMAC-SHA1AndAES256-CBC",
+            )
+        else:
+            return private_key.export_key(format="PEM")
+
+    def export_public_key(self, public_key) -> bytes:
+        """导出公钥为 PEM 格式
+
+        Args:
+            public_key: EdDSA 公钥对象
+
+        Returns:
+            bytes: PEM 格式的公钥
+        """
+        return public_key.export_key(format="PEM")
+
+    def export_private_key_raw(self, private_key) -> bytes:
+        """导出私钥为原始字节格式（RFC8032）
+
+        Args:
+            private_key: EdDSA 私钥对象
+
+        Returns:
+            bytes: 原始格式的私钥
+        """
+        return private_key.export_key(format="raw")
+
+    def export_public_key_raw(self, public_key) -> bytes:
+        """导出公钥为原始字节格式（RFC8032）
+
+        Args:
+            public_key: EdDSA 公钥对象
+
+        Returns:
+            bytes: 原始格式的公钥
+        """
+        return public_key.export_key(format="raw")
+
+    def import_private_key_raw(self, key_data: bytes):
+        """从原始字节导入私钥（RFC8032）
+
+        Args:
+            key_data: 私钥的原始字节
+                      Ed25519 为 32 字节
+                      Ed448 为 57 字节
+
+        Returns:
+            EdDSA 私钥对象
+        """
+        private_key = eddsa.import_private_key(key_data)
+
+        # 验证曲线类型
+        if private_key.curve != self.curve:
+            raise ValueError(
+                f"导入的密钥曲线类型 {private_key.curve} 与当前设置的 {self.curve} 不匹配"
+            )
+
+        return private_key
+
+    def import_public_key_raw(self, key_data: bytes):
+        """从原始字节导入公钥（RFC8032）
+
+        Args:
+            key_data: 公钥的原始字节
+                      Ed25519 为 32 字节
+                      Ed448 为 57 字节
+
+        Returns:
+            EdDSA 公钥对象
+        """
+        public_key = eddsa.import_public_key(key_data)
+
+        # 验证曲线类型
+        if public_key.curve != self.curve:
+            raise ValueError(
+                f"导入的密钥曲线类型 {public_key.curve} 与当前设置的 {self.curve} 不匹配"
+            )
+
         return public_key
 
     def _ensure_bytes(self, data: Union[bytes, str]) -> bytes:

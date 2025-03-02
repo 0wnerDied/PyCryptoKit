@@ -1,6 +1,12 @@
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QScrollArea, QWidget, QVBoxLayout
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QTabWidget,
+    QScrollArea,
+    QWidget,
+    QVBoxLayout,
+)
 from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve
 
 from .views.hash_view import HashView
 from .views.symmetric_view import SymmetricView
@@ -14,8 +20,15 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("PyCryptoKit")
         self.setMinimumSize(1280, 720)
+
+        # 初始设置窗口透明度为0（完全透明）
+        self.setWindowOpacity(0.0)
+
         self.setup_ui()
         self.apply_styles()
+
+        # 添加淡入动画
+        self.fade_in_animation()
 
     def setup_ui(self):
         # 创建菜单栏
@@ -168,3 +181,44 @@ class MainWindow(QMainWindow):
             "PyCryptoKit - 加密工具箱\n\n"
             "一个用于加密、解密、哈希计算和数字签名的工具",
         )
+
+    def fade_in_animation(self):
+        """窗口淡入动画效果"""
+        # 创建属性动画
+        self.fade_in = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_in.setDuration(800)  # 动画持续800毫秒
+        self.fade_in.setStartValue(0.0)  # 开始时完全透明
+        self.fade_in.setEndValue(1.0)  # 结束时完全不透明
+        self.fade_in.setEasingCurve(QEasingCurve.Type.OutCubic)  # 使用缓出三次方曲线
+        self.fade_in.start()  # 开始动画
+
+    def closeEvent(self, event):
+        """窗口关闭时的淡出动画"""
+        # 如果已经在执行关闭动画，则允许默认关闭行为
+        if hasattr(self, "_closing") and self._closing:
+            event.accept()
+            return
+
+        # 阻止默认的关闭行为
+        event.ignore()
+        self._closing = True
+
+        # 创建淡出动画
+        self.fade_out = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_out.setDuration(500)  # 动画持续500毫秒
+        self.fade_out.setStartValue(1.0)  # 开始时完全不透明
+        self.fade_out.setEndValue(0.0)  # 结束时完全透明
+        self.fade_out.setEasingCurve(QEasingCurve.Type.InCubic)  # 使用缓入三次方曲线
+
+        # 当动画完成时，真正关闭窗口
+        self.fade_out.finished.connect(self._force_close)
+
+        # 开始动画
+        self.fade_out.start()
+
+    def _force_close(self):
+        """强制关闭窗口"""
+        # 设置属性确保窗口被删除
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        # 调用原生close方法，确保正常的关闭流程
+        super().close()

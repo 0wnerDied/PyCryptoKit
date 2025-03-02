@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QScrollArea
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QScrollArea, QWidget, QVBoxLayout
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
@@ -15,6 +15,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("PyCryptoKit")
         self.setMinimumSize(1280, 720)
         self.setup_ui()
+        self.apply_styles()
 
     def setup_ui(self):
         # 创建菜单栏
@@ -31,9 +32,15 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
+        # 创建主容器，用于应用圆角
+        main_container = QWidget()
+        main_layout = QVBoxLayout(main_container)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        self.setCentralWidget(main_container)
+
         # 创建标签页
         self.tabs = QTabWidget()
-        self.setCentralWidget(self.tabs)
+        main_layout.addWidget(self.tabs)
 
         # 添加功能页面并使其可滚动
         self.hash_view = self.create_scrollable_view(HashView())
@@ -58,6 +65,99 @@ class MainWindow(QMainWindow):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         return scroll
+
+    def apply_styles(self):
+        """
+        应用样式表，实现圆角效果，同时保持暗黑模式兼容性
+        """
+        self.setStyleSheet(
+            """
+            QTabWidget::pane {
+                border: 1px solid palette(mid);
+                border-radius: 8px;
+            }
+            
+            QTabWidget::tab-bar {
+                alignment: center;
+            }
+            
+            QTabBar::tab {
+                border: 1px solid palette(mid);
+                border-bottom: none;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                padding: 8px 16px;
+                margin-right: 2px;
+            }
+            
+            QTabBar::tab:selected {
+                border-bottom: 2px solid palette(highlight);
+            }
+            
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            
+            /* 垂直滚动条样式 */
+            QScrollBar:vertical {
+                background: palette(base);
+                width: 12px;
+                margin: 0px;
+                border-radius: 6px;
+            }
+            
+            QScrollBar::handle:vertical {
+                background: palette(mid);
+                min-height: 20px;
+                border-radius: 6px;
+            }
+            
+            QScrollBar::handle:vertical:hover {
+                background: palette(dark);
+            }
+            
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+            
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+            
+            /* 水平滚动条样式 */
+            QScrollBar:horizontal {
+                background: palette(base);
+                height: 12px;
+                margin: 0px;
+                border-radius: 6px;
+            }
+            
+            QScrollBar::handle:horizontal {
+                background: palette(mid);
+                min-width: 20px;
+                border-radius: 6px;
+            }
+            
+            QScrollBar::handle:horizontal:hover {
+                background: palette(dark);
+            }
+            
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+                width: 0px;
+            }
+            
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: none;
+            }
+            
+            QStatusBar {
+                border-top: 1px solid palette(mid);
+                border-bottom-left-radius: 8px;
+                border-bottom-right-radius: 8px;
+            }
+        """
+        )
 
     def show_about(self):
         from PySide6.QtWidgets import QMessageBox

@@ -8,7 +8,7 @@ PyCryptoKit 核心加密算法模块
 from . import asymmetric, hash, signature, symmetric
 
 # 导出非对称加密模块的内容
-from .asymmetric import ECCCipher, KeyManager, RSACipher
+from .asymmetric import ECC, ElGamal, RSA
 
 # 导出哈希模块的内容
 from .hash import (
@@ -77,9 +77,9 @@ __all__ = [
     "hash",
     "signature",
     # 非对称加密
-    "RSACipher",
-    "ECCCipher",
-    "KeyManager",
+    "RSA",
+    "ECC",
+    "ElGamal",
     # 哈希算法
     "HashBase",
     "MD5Hash",

@@ -153,7 +153,7 @@ class SymmetricView(QWidget):
         self.key_b64_check = QCheckBox("Base64密钥")
         key_format_layout.addWidget(self.key_b64_check)
 
-        # 默认选择 Hex 
+        # 默认选择 Hex
         self.key_hex_check.setChecked(True)
         self.key_hex_check.toggled.connect(
             lambda checked: self.handle_key_format_change(self.key_hex_check)
@@ -185,7 +185,7 @@ class SymmetricView(QWidget):
         self.iv_b64_check = QCheckBox("Base64 IV")
         iv_format_layout.addWidget(self.iv_b64_check)
 
-        # 默认选择 Hex 
+        # 默认选择 Hex
         self.iv_hex_check.setChecked(True)
         self.iv_hex_check.toggled.connect(
             lambda checked: self.handle_iv_format_change(self.iv_hex_check)
@@ -425,7 +425,7 @@ class SymmetricView(QWidget):
         self.decrypt_key_b64_check = QCheckBox("Base64密钥")
         key_format_layout.addWidget(self.decrypt_key_b64_check)
 
-        # 默认选择 Hex 
+        # 默认选择 Hex
         self.decrypt_key_hex_check.setChecked(True)
         self.decrypt_key_hex_check.toggled.connect(
             lambda checked: self.handle_decrypt_key_format_change(
@@ -455,7 +455,7 @@ class SymmetricView(QWidget):
         self.decrypt_iv_b64_check = QCheckBox("Base64 IV")
         iv_format_layout.addWidget(self.decrypt_iv_b64_check)
 
-        # 默认选择Hex 
+        # 默认选择Hex
         self.decrypt_iv_hex_check.setChecked(True)
         self.decrypt_iv_hex_check.toggled.connect(
             lambda checked: self.handle_decrypt_iv_format_change(
@@ -718,6 +718,19 @@ class SymmetricView(QWidget):
                 index = self.mode_combo.findText(current_mode)
                 if index >= 0:
                     self.mode_combo.setCurrentIndex(index)
+        elif algorithm == "AES":
+            # 保存当前选择
+            current_mode = self.mode_combo.currentText()
+            # 清空并重新添加除CTR外的所有模式
+            self.mode_combo.clear()
+            for mode in self.all_modes:
+                if mode != "CTR":
+                    self.mode_combo.addItem(mode)
+            # 尝试恢复之前的选择, 如果不是CTR的话
+            if current_mode != "CTR":
+                index = self.mode_combo.findText(current_mode)
+                if index >= 0:
+                    self.mode_combo.setCurrentIndex(index)
         else:
             # 恢复所有模式
             current_mode = self.mode_combo.currentText()
@@ -801,6 +814,19 @@ class SymmetricView(QWidget):
                     self.decrypt_mode_combo.addItem(mode)
             # 尝试恢复之前的选择, 如果不是GCM的话
             if current_mode != "GCM":
+                index = self.decrypt_mode_combo.findText(current_mode)
+                if index >= 0:
+                    self.decrypt_mode_combo.setCurrentIndex(index)
+        elif algorithm == "AES":
+            # 保存当前选择
+            current_mode = self.decrypt_mode_combo.currentText()
+            # 清空并重新添加除CTR外的所有模式
+            self.decrypt_mode_combo.clear()
+            for mode in self.all_modes:
+                if mode != "CTR":
+                    self.decrypt_mode_combo.addItem(mode)
+            # 尝试恢复之前的选择, 如果不是CTR的话
+            if current_mode != "CTR":
                 index = self.decrypt_mode_combo.findText(current_mode)
                 if index >= 0:
                     self.decrypt_mode_combo.setCurrentIndex(index)
@@ -944,7 +970,7 @@ class SymmetricView(QWidget):
             elif self.key_b64_check.isChecked():
                 self.key_input.setText(base64.b64encode(random_key).decode("ascii"))
             else:
-                # 默认使用 Hex 
+                # 默认使用 Hex
                 self.key_input.setText(random_key.hex())
                 self.key_hex_check.setChecked(True)
         except Exception as e:
@@ -979,7 +1005,7 @@ class SymmetricView(QWidget):
             elif self.iv_b64_check.isChecked():
                 self.iv_input.setText(base64.b64encode(random_iv).decode("ascii"))
             else:
-                # 默认使用 Hex 
+                # 默认使用 Hex
                 self.iv_input.setText(random_iv.hex())
                 self.iv_hex_check.setChecked(True)
         except Exception as e:
@@ -1167,7 +1193,7 @@ class SymmetricView(QWidget):
                     self.decrypt_result.setText(result_text)
                     self.last_decrypt_result = result_text
                 except UnicodeDecodeError:
-                    # 如果无法解码为文本, 显示 Hex 
+                    # 如果无法解码为文本, 显示 Hex
                     self.decrypt_result.setText(
                         f"无法以{encoding}解码结果, 显示 Hex:\n{plaintext.hex()}"
                     )

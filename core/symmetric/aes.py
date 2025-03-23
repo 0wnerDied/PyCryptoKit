@@ -39,7 +39,6 @@ class AESCipher(SymmetricCipher):
             Mode.CBC: AES.MODE_CBC,
             Mode.CFB: AES.MODE_CFB,
             Mode.OFB: AES.MODE_OFB,
-            Mode.CTR: AES.MODE_CTR,
             Mode.GCM: AES.MODE_GCM,
         }
 
@@ -63,7 +62,7 @@ class AESCipher(SymmetricCipher):
         Args:
             plaintext: 明文
             key: 密钥
-            iv: 初始向量(CBC、CFB、OFB、CTR模式需要)
+            iv: 初始向量(CBC、CFB、OFB模式需要)
             **kwargs: 其他参数, 如GCM模式的associated_data, CFB模式的segment_size
 
         Returns:
@@ -92,21 +91,25 @@ class AESCipher(SymmetricCipher):
             else:
                 iv = iv[:16].ljust(16, b"\0")  # 其他模式16字节
 
-        # 填充处理 (对所有模式, 只要选择了填充方式)
-        if self.padding != Padding.NONE:
-            if self.padding == Padding.PKCS7:
-                plaintext = pad(plaintext, self.block_size)
-            elif self.padding == Padding.ZERO:
-                # 零填充
-                padding_length = self.block_size - (len(plaintext) % self.block_size)
-                if padding_length != self.block_size:  # 只有在需要填充时才填充
-                    plaintext = plaintext + b"\x00" * padding_length
-        else:
-            # 无填充模式下, 数据长度必须是块大小的整数倍
-            if len(plaintext) % self.block_size != 0:
-                raise ValueError(
-                    f"无填充模式下, 数据长度必须是{self.block_size}的整数倍"
-                )
+        # 填充处理 (对需要填充的模式)
+        # GCM和CTR模式不需要填充
+        if self.mode not in [Mode.GCM]:
+            if self.padding != Padding.NONE:
+                if self.padding == Padding.PKCS7:
+                    plaintext = pad(plaintext, self.block_size)
+                elif self.padding == Padding.ZERO:
+                    # 零填充
+                    padding_length = self.block_size - (
+                        len(plaintext) % self.block_size
+                    )
+                    if padding_length != self.block_size:  # 只有在需要填充时才填充
+                        plaintext = plaintext + b"\x00" * padding_length
+            else:
+                # 无填充模式下, 数据长度必须是块大小的整数倍
+                if len(plaintext) % self.block_size != 0:
+                    raise ValueError(
+                        f"无填充模式下, 数据长度必须是{self.block_size}的整数倍"
+                    )
 
         try:
             # 创建加密器
@@ -114,9 +117,6 @@ class AESCipher(SymmetricCipher):
 
             if self.mode == Mode.ECB:
                 cipher = AES.new(key, mode_value)
-            elif self.mode == Mode.CTR:
-                # 对CTR模式进行特殊处理
-                cipher = AES.new(key, mode_value, nonce=iv[:8])
             elif self.mode == Mode.GCM:
                 cipher = AES.new(key, mode_value, nonce=iv)
             elif self.mode == Mode.CFB:
@@ -133,7 +133,8 @@ class AESCipher(SymmetricCipher):
                         associated_data = associated_data.encode("utf-8")
                     cipher.update(associated_data)
                 ciphertext, tag = cipher.encrypt_and_digest(plaintext)
-                return b"".join([tag, ciphertext])
+                # 返回格式: nonce + ciphertext + tag
+                return iv + ciphertext + tag
 
             # 普通加密
             ciphertext = cipher.encrypt(plaintext)
@@ -171,16 +172,19 @@ class AESCipher(SymmetricCipher):
         try:
             # 处理特殊模式
             if self.mode == Mode.GCM:
-                if len(ciphertext) < 16:  # 至少需要16字节tag
-                    raise ValueError("GCM密文格式不正确")
-                if iv is None:
-                    raise ValueError("GCM模式需要提供nonce")
-                if isinstance(iv, str):
-                    nonce = iv.encode("utf-8")[:12].ljust(12, b"\0")
-                else:
-                    nonce = iv[:12].ljust(12, b"\0")
-                # 从密文中提取tag
-                tag, ciphertext = ciphertext[:16], ciphertext[16:]
+                # 检查密文长度是否足够
+                if len(ciphertext) < 28:  # 至少需要12字节nonce + 16字节tag
+                    raise ValueError("GCM密文格式不正确, 长度太短")
+
+                # 从密文中提取nonce、密文和tag
+                stored_nonce = ciphertext[:12]
+                actual_ciphertext = ciphertext[12:-16]
+                tag = ciphertext[-16:]
+
+                # 使用提供的nonce，如果没有提供则使用存储的nonce
+                nonce = iv if iv is not None else stored_nonce
+                if isinstance(nonce, str):
+                    nonce = nonce.encode("utf-8")[:12].ljust(12, b"\0")
 
                 cipher = AES.new(key, self.mode_map[self.mode], nonce=nonce)
 
@@ -191,34 +195,17 @@ class AESCipher(SymmetricCipher):
                         associated_data = associated_data.encode("utf-8")
                     cipher.update(associated_data)
 
-                plaintext = cipher.decrypt_and_verify(ciphertext, tag)
-
-                # 去除填充 (GCM模式也需要去填充)
-                if self.padding != Padding.NONE:
-                    if self.padding == Padding.PKCS7:
-                        try:
-                            plaintext = unpad(plaintext, self.block_size)
-                        except ValueError:
-                            # 如果解除填充失败, 可能是填充无效, 返回原始数据
-                            pass
-                    elif self.padding == Padding.ZERO:
-                        plaintext = plaintext.rstrip(b"\x00")
-
-                return plaintext
+                try:
+                    # 解密并验证
+                    plaintext = cipher.decrypt_and_verify(actual_ciphertext, tag)
+                    return plaintext
+                except ValueError:
+                    raise ValueError("GCM认证失败, 密文可能被篡改")
 
             # 处理其他模式
             iv_required = self.mode != Mode.ECB
             if iv_required:
-                if self.mode == Mode.CTR:
-                    # CTR模式处理
-                    if iv is None:
-                        raise ValueError("CTR模式需要提供nonce")
-                    if isinstance(iv, str):
-                        nonce = iv.encode("utf-8")[:8]
-                    else:
-                        nonce = iv[:8]
-                    cipher = AES.new(key, self.mode_map[self.mode], nonce=nonce)
-                elif self.mode == Mode.CFB:
+                if self.mode == Mode.CFB:
                     segment_size = kwargs.get(
                         "segment_size", 128
                     )  # 默认使用128位分段大小
@@ -246,16 +233,17 @@ class AESCipher(SymmetricCipher):
             # 解密
             plaintext = cipher.decrypt(ciphertext)
 
-            # 去除填充 (对所有模式, 只要选择了填充方式)
-            if self.padding != Padding.NONE:
-                if self.padding == Padding.PKCS7:
-                    try:
-                        plaintext = unpad(plaintext, self.block_size)
-                    except ValueError:
-                        # 如果解除填充失败, 可能是填充无效, 返回原始数据
-                        pass
-                elif self.padding == Padding.ZERO:
-                    plaintext = plaintext.rstrip(b"\x00")
+            # 去除填充 (对需要填充的模式)
+            if self.mode not in [Mode.GCM]:
+                if self.padding != Padding.NONE:
+                    if self.padding == Padding.PKCS7:
+                        try:
+                            plaintext = unpad(plaintext, self.block_size)
+                        except ValueError:
+                            # 如果解除填充失败, 可能是填充无效, 返回原始数据
+                            pass
+                    elif self.padding == Padding.ZERO:
+                        plaintext = plaintext.rstrip(b"\x00")
 
             return plaintext
 

@@ -62,7 +62,7 @@ class ECCKey(AsymmetricKey):
         else:
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                 encryption_algorithm=serialization.NoEncryption(),
             )
 
@@ -76,7 +76,7 @@ class ECCKey(AsymmetricKey):
         else:
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.PKCS8,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                 encryption_algorithm=serialization.NoEncryption(),
             )
 
@@ -194,7 +194,7 @@ class ECCKey(AsymmetricKey):
                         )
                     key_bytes = self.key_data.private_bytes(
                         encoding=serialization.Encoding.PEM,
-                        format=serialization.PrivateFormat.PKCS8,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                         encryption_algorithm=encryption_algorithm,
                     )
             elif format.lower() == "der":
@@ -211,7 +211,7 @@ class ECCKey(AsymmetricKey):
                         )
                     key_bytes = self.key_data.private_bytes(
                         encoding=serialization.Encoding.DER,
-                        format=serialization.PrivateFormat.PKCS8,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                         encryption_algorithm=encryption_algorithm,
                     )
             elif format.lower() == "openssh":
@@ -261,7 +261,7 @@ class ECC(AsymmetricCipher):
 
     @staticmethod
     def get_supported_key_sizes() -> List[str]:
-        """获取支持的密钥大小列表 (对于ECC, 返回支持的曲线名称) """
+        """获取支持的密钥大小列表 (对于ECC, 返回支持的曲线名称)"""
         return ECC.supported_curves()
 
     @staticmethod

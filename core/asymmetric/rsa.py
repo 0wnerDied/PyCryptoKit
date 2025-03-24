@@ -37,7 +37,7 @@ class RSAKey(AsymmetricKey):
         else:
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                 encryption_algorithm=serialization.NoEncryption(),
             )
 
@@ -51,7 +51,7 @@ class RSAKey(AsymmetricKey):
         else:
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.PKCS8,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                 encryption_algorithm=serialization.NoEncryption(),
             )
 
@@ -151,12 +151,13 @@ class RSAKey(AsymmetricKey):
                 else:
                     encryption_algorithm = serialization.NoEncryption()
                     if password:
+                        # 使用与OpenSSL相同的加密方式
                         encryption_algorithm = serialization.BestAvailableEncryption(
                             password
                         )
                     key_bytes = self.key_data.private_bytes(
                         encoding=serialization.Encoding.PEM,
-                        format=serialization.PrivateFormat.PKCS8,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                         encryption_algorithm=encryption_algorithm,
                     )
             elif format.lower() == "der":
@@ -173,7 +174,7 @@ class RSAKey(AsymmetricKey):
                         )
                     key_bytes = self.key_data.private_bytes(
                         encoding=serialization.Encoding.DER,
-                        format=serialization.PrivateFormat.PKCS8,
+                        format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
                         encryption_algorithm=encryption_algorithm,
                     )
             elif format.lower() == "openssh":

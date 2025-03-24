@@ -11,8 +11,6 @@ class ECDSASignature(SignatureBase):
 
     # 支持的椭圆曲线
     SUPPORTED_CURVES = {
-        "PRIME192V1": ec.SECP192R1(),
-        "PRIME256V1": ec.SECP256R1(),
         "SECP192R1": ec.SECP192R1(),
         "SECP224R1": ec.SECP224R1(),
         "SECP256R1": ec.SECP256R1(),

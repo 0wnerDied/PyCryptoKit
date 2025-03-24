@@ -143,8 +143,6 @@ class SignatureView(QWidget):
         self.sign_ecdsa_curve_combo = QComboBox()
         self.sign_ecdsa_curve_combo.addItems(
             [
-                "PRIME192V1",
-                "PRIME256V1",
                 "SECP192R1",
                 "SECP224R1",
                 "SECP256R1",
@@ -432,7 +430,21 @@ class SignatureView(QWidget):
         self.verify_hash_algo_label = QLabel("哈希算法:")
         self.verify_hash_algo_combo = QComboBox()
         self.verify_hash_algo_combo.addItems(
-            ["SHA256", "SHA384", "SHA512", "SHA3-256", "SHA3-384", "SHA3-512"]
+            [
+                "MD5",
+                "SHA1",
+                "SHA224",
+                "SHA256",
+                "SHA384",
+                "SHA512",
+                "SHA512_224",
+                "SHA512_256",
+                "SHA3_224",
+                "SHA3_256",
+                "SHA3_384",
+                "SHA3_512",
+                "SM3",
+            ]
         )
         self.verify_algo_params_layout.addWidget(self.verify_hash_algo_label, 0, 0)
         self.verify_algo_params_layout.addWidget(self.verify_hash_algo_combo, 0, 1)
@@ -441,7 +453,27 @@ class SignatureView(QWidget):
         self.verify_ecdsa_curve_label = QLabel("ECDSA曲线:")
         self.verify_ecdsa_curve_combo = QComboBox()
         self.verify_ecdsa_curve_combo.addItems(
-            ["SECP256R1", "SECP384R1", "SECP521R1", "SECP256K1"]
+            [
+                "SECP192R1",
+                "SECP224R1",
+                "SECP256R1",
+                "SECP384R1",
+                "SECP521R1",
+                "SECP256K1",
+                "SECT163K1",
+                "SECT233K1",
+                "SECT283K1",
+                "SECT409K1",
+                "SECT571K1",
+                "SECT163R2",
+                "SECT233R1",
+                "SECT283R1",
+                "SECT409R1",
+                "SECT571R1",
+                "BRAINPOOLP256R1",
+                "BRAINPOOLP384R1",
+                "BRAINPOOLP512R1",
+            ]
         )
         self.verify_algo_params_layout.addWidget(self.verify_ecdsa_curve_label, 1, 0)
         self.verify_algo_params_layout.addWidget(self.verify_ecdsa_curve_combo, 1, 1)

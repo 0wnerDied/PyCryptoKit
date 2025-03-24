@@ -1,5 +1,5 @@
-from Cryptodome.PublicKey import ECC
-from Cryptodome.Signature import eddsa
+from Crypto.PublicKey import ECC
+from Crypto.Signature import eddsa
 from typing import Dict, Optional, Tuple, Union, Any
 
 from .base import SignatureBase

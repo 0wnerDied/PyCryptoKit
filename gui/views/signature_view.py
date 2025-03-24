@@ -15,15 +15,19 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QMessageBox,
     QScrollArea,
+    QFormLayout,
+    QSpinBox,
+    QGridLayout,
 )
 from PySide6.QtCore import Qt
 import os
 import base64
 import binascii
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from core.signature import (
-    sign,
+    sign_data,
+    verify_signature,
     list_algorithms as list_signature_algorithms,
     get_algorithm_info as get_signature_algorithm_info,
 )
@@ -83,9 +87,9 @@ class SignatureView(QWidget):
         for algo in self.algorithms:
             self.sign_algo_combo.addItem(algo)
 
-        # 默认选择 RSA
-        if "RSA" in self.algorithms:
-            index = self.sign_algo_combo.findText("RSA")
+        # 默认选择 RSA_PKCS1v15
+        if "RSA_PKCS1v15" in self.algorithms:
+            index = self.sign_algo_combo.findText("RSA_PKCS1v15")
             if index >= 0:
                 self.sign_algo_combo.setCurrentIndex(index)
 
@@ -98,11 +102,100 @@ class SignatureView(QWidget):
         self.sign_algo_info.setWordWrap(True)
         algo_layout.addWidget(self.sign_algo_info)
 
-        # 更新算法信息
-        self.update_sign_algorithm_info()
+        # 算法参数配置区域
+        self.sign_algo_params_group = QGroupBox()
+        self.sign_algo_params_layout = QGridLayout()
+
+        # 创建参数控件
+        # 哈希算法
+        self.sign_hash_algo_label = QLabel("哈希算法:")
+        self.sign_hash_algo_combo = QComboBox()
+        self.sign_hash_algo_combo.addItems(
+            [
+                "MD5",
+                "SHA1",
+                "SHA224",
+                "SHA256",
+                "SHA384",
+                "SHA512",
+                "SHA512_224",
+                "SHA512_256",
+                "SHA3_224",
+                "SHA3_256",
+                "SHA3_384",
+                "SHA3_512",
+                "SM3",
+            ]
+        )
+        self.sign_algo_params_layout.addWidget(self.sign_hash_algo_label, 0, 0)
+        self.sign_algo_params_layout.addWidget(self.sign_hash_algo_combo, 0, 1)
+
+        # RSA 密钥长度
+        self.sign_rsa_key_size_label = QLabel("密钥长度:")
+        self.sign_rsa_key_size_combo = QComboBox()
+        self.sign_rsa_key_size_combo.addItems(["1024", "2048", "3072", "4096"])
+        self.sign_rsa_key_size_combo.setCurrentText("2048")  # 默认选择2048位
+        self.sign_algo_params_layout.addWidget(self.sign_rsa_key_size_label, 1, 0)
+        self.sign_algo_params_layout.addWidget(self.sign_rsa_key_size_combo, 1, 1)
+
+        # ECDSA 曲线选择
+        self.sign_ecdsa_curve_label = QLabel("ECDSA曲线:")
+        self.sign_ecdsa_curve_combo = QComboBox()
+        self.sign_ecdsa_curve_combo.addItems(
+            [
+                "PRIME192V1",
+                "PRIME256V1",
+                "SECP192R1",
+                "SECP224R1",
+                "SECP256R1",
+                "SECP384R1",
+                "SECP521R1",
+                "SECP256K1",
+                "SECT163K1",
+                "SECT233K1",
+                "SECT283K1",
+                "SECT409K1",
+                "SECT571K1",
+                "SECT163R2",
+                "SECT233R1",
+                "SECT283R1",
+                "SECT409R1",
+                "SECT571R1",
+                "BRAINPOOLP256R1",
+                "BRAINPOOLP384R1",
+                "BRAINPOOLP512R1",
+            ]
+        )
+        self.sign_algo_params_layout.addWidget(self.sign_ecdsa_curve_label, 2, 0)
+        self.sign_algo_params_layout.addWidget(self.sign_ecdsa_curve_combo, 2, 1)
+
+        # EdDSA 曲线选择
+        self.sign_eddsa_curve_label = QLabel("EdDSA曲线:")
+        self.sign_eddsa_curve_combo = QComboBox()
+        self.sign_eddsa_curve_combo.addItems(["Ed25519", "Ed448"])
+        self.sign_algo_params_layout.addWidget(self.sign_eddsa_curve_label, 3, 0)
+        self.sign_algo_params_layout.addWidget(self.sign_eddsa_curve_combo, 3, 1)
+
+        # RSA-PSS salt长度
+        self.sign_pss_salt_length_label = QLabel("PSS盐长度:")
+        self.sign_pss_salt_length = QSpinBox()
+        self.sign_pss_salt_length.setRange(0, 512)
+        self.sign_pss_salt_length.setValue(32)  # 默认值
+        self.sign_algo_params_layout.addWidget(self.sign_pss_salt_length_label, 4, 0)
+        self.sign_algo_params_layout.addWidget(self.sign_pss_salt_length, 4, 1)
+
+        # 设置列伸展因子，使控件对齐
+        self.sign_algo_params_layout.setColumnStretch(1, 1)
+
+        self.sign_algo_params_group.setLayout(self.sign_algo_params_layout)
+        algo_layout.addWidget(self.sign_algo_params_group)
 
         algo_group.setLayout(algo_layout)
         layout.addWidget(algo_group)
+
+        # 更新算法参数显示
+        self.update_sign_algorithm_info()
+        self.update_sign_algorithm_params()
 
         # 密钥选择
         key_group = QGroupBox("私钥")
@@ -313,9 +406,9 @@ class SignatureView(QWidget):
         for algo in self.algorithms:
             self.verify_algo_combo.addItem(algo)
 
-        # 默认选择 RSA
-        if "RSA" in self.algorithms:
-            index = self.verify_algo_combo.findText("RSA")
+        # 默认选择 RSA_PKCS1v15
+        if "RSA_PKCS1v15" in self.algorithms:
+            index = self.verify_algo_combo.findText("RSA_PKCS1v15")
             if index >= 0:
                 self.verify_algo_combo.setCurrentIndex(index)
 
@@ -330,8 +423,55 @@ class SignatureView(QWidget):
         self.verify_algo_info.setWordWrap(True)
         algo_layout.addWidget(self.verify_algo_info)
 
-        # 更新算法信息
+        # 算法参数配置区域
+        self.verify_algo_params_group = QGroupBox("算法参数")
+        self.verify_algo_params_layout = QGridLayout()
+
+        # 创建参数控件
+        # 哈希算法
+        self.verify_hash_algo_label = QLabel("哈希算法:")
+        self.verify_hash_algo_combo = QComboBox()
+        self.verify_hash_algo_combo.addItems(
+            ["SHA256", "SHA384", "SHA512", "SHA3-256", "SHA3-384", "SHA3-512"]
+        )
+        self.verify_algo_params_layout.addWidget(self.verify_hash_algo_label, 0, 0)
+        self.verify_algo_params_layout.addWidget(self.verify_hash_algo_combo, 0, 1)
+
+        # ECDSA 曲线选择
+        self.verify_ecdsa_curve_label = QLabel("ECDSA曲线:")
+        self.verify_ecdsa_curve_combo = QComboBox()
+        self.verify_ecdsa_curve_combo.addItems(
+            ["SECP256R1", "SECP384R1", "SECP521R1", "SECP256K1"]
+        )
+        self.verify_algo_params_layout.addWidget(self.verify_ecdsa_curve_label, 1, 0)
+        self.verify_algo_params_layout.addWidget(self.verify_ecdsa_curve_combo, 1, 1)
+
+        # EdDSA 曲线选择
+        self.verify_eddsa_curve_label = QLabel("EdDSA曲线:")
+        self.verify_eddsa_curve_combo = QComboBox()
+        self.verify_eddsa_curve_combo.addItems(["Ed25519", "Ed448"])
+        self.verify_algo_params_layout.addWidget(self.verify_eddsa_curve_label, 2, 0)
+        self.verify_algo_params_layout.addWidget(self.verify_eddsa_curve_combo, 2, 1)
+
+        # RSA-PSS salt长度
+        self.verify_pss_salt_length_label = QLabel("PSS盐长度:")
+        self.verify_pss_salt_length = QSpinBox()
+        self.verify_pss_salt_length.setRange(0, 512)
+        self.verify_pss_salt_length.setValue(32)  # 默认值
+        self.verify_algo_params_layout.addWidget(
+            self.verify_pss_salt_length_label, 3, 0
+        )
+        self.verify_algo_params_layout.addWidget(self.verify_pss_salt_length, 3, 1)
+
+        # 设置列伸展因子，使控件对齐
+        self.verify_algo_params_layout.setColumnStretch(1, 1)
+
+        self.verify_algo_params_group.setLayout(self.verify_algo_params_layout)
+        algo_layout.addWidget(self.verify_algo_params_group)
+
+        # 更新算法参数显示
         self.update_verify_algorithm_info()
+        self.update_verify_algorithm_params()
 
         algo_group.setLayout(algo_layout)
         layout.addWidget(algo_group)
@@ -483,7 +623,7 @@ class SignatureView(QWidget):
         format_layout = QHBoxLayout()
         format_layout.addWidget(QLabel("签名格式:"))
         self.signature_format_combo = QComboBox()
-        self.signature_format_combo.addItems(["Base64", "Hex "])
+        self.signature_format_combo.addItems(["Base64", "Hex"])
         format_layout.addWidget(self.signature_format_combo)
         signature_text_layout.addLayout(format_layout)
 
@@ -550,7 +690,7 @@ class SignatureView(QWidget):
                 default_params = info.get("default_params", {})
 
                 params_str = ", ".join([f"{k}: {v}" for k, v in default_params.items()])
-                info_text = f"{description}\n默认参数: {params_str}"
+                info_text = f"{description}\n{params_str}"
                 self.sign_algo_info.setText(info_text)
             except Exception as e:
                 self.sign_algo_info.setText(f"获取算法信息失败: {str(e)}")
@@ -565,18 +705,104 @@ class SignatureView(QWidget):
                 default_params = info.get("default_params", {})
 
                 params_str = ", ".join([f"{k}: {v}" for k, v in default_params.items()])
-                info_text = f"{description}\n默认参数: {params_str}"
+                info_text = f"{description}\n{params_str}"
                 self.verify_algo_info.setText(info_text)
             except Exception as e:
                 self.verify_algo_info.setText(f"获取算法信息失败: {str(e)}")
 
+    def update_sign_algorithm_params(self):
+        """更新签名算法参数控件显示"""
+        algorithm = self.sign_algo_combo.currentText()
+
+        # 隐藏所有参数控件
+        self.sign_hash_algo_label.setVisible(False)
+        self.sign_hash_algo_combo.setVisible(False)
+        self.sign_rsa_key_size_label.setVisible(False)
+        self.sign_rsa_key_size_combo.setVisible(False)
+        self.sign_ecdsa_curve_label.setVisible(False)
+        self.sign_ecdsa_curve_combo.setVisible(False)
+        self.sign_eddsa_curve_label.setVisible(False)
+        self.sign_eddsa_curve_combo.setVisible(False)
+        self.sign_pss_salt_length_label.setVisible(False)
+        self.sign_pss_salt_length.setVisible(False)
+
+        # 根据算法显示相关参数
+        if algorithm == "RSA_PKCS1v15":
+            # 显示哈希算法和密钥长度
+            self.sign_hash_algo_label.setVisible(True)
+            self.sign_hash_algo_combo.setVisible(True)
+            self.sign_rsa_key_size_label.setVisible(True)
+            self.sign_rsa_key_size_combo.setVisible(True)
+
+        elif algorithm == "RSA_PSS":
+            # 显示哈希算法、密钥长度和盐长度
+            self.sign_hash_algo_label.setVisible(True)
+            self.sign_hash_algo_combo.setVisible(True)
+            self.sign_rsa_key_size_label.setVisible(True)
+            self.sign_rsa_key_size_combo.setVisible(True)
+            self.sign_pss_salt_length_label.setVisible(True)
+            self.sign_pss_salt_length.setVisible(True)
+
+        elif algorithm == "ECDSA":
+            # 显示哈希算法和ECDSA曲线
+            self.sign_hash_algo_label.setVisible(True)
+            self.sign_hash_algo_combo.setVisible(True)
+            self.sign_ecdsa_curve_label.setVisible(True)
+            self.sign_ecdsa_curve_combo.setVisible(True)
+
+        elif algorithm == "EdDSA":
+            # 只显示EdDSA曲线
+            self.sign_eddsa_curve_label.setVisible(True)
+            self.sign_eddsa_curve_combo.setVisible(True)
+
+    def update_verify_algorithm_params(self):
+        """更新验证算法参数控件显示"""
+        algorithm = self.verify_algo_combo.currentText()
+
+        # 隐藏所有参数控件
+        self.verify_hash_algo_label.setVisible(False)
+        self.verify_hash_algo_combo.setVisible(False)
+        self.verify_ecdsa_curve_label.setVisible(False)
+        self.verify_ecdsa_curve_combo.setVisible(False)
+        self.verify_eddsa_curve_label.setVisible(False)
+        self.verify_eddsa_curve_combo.setVisible(False)
+        self.verify_pss_salt_length_label.setVisible(False)
+        self.verify_pss_salt_length.setVisible(False)
+
+        # 根据算法显示相关参数
+        if algorithm == "RSA_PKCS1v15":
+            # 只显示哈希算法选择
+            self.verify_hash_algo_label.setVisible(True)
+            self.verify_hash_algo_combo.setVisible(True)
+
+        elif algorithm == "RSA_PSS":
+            # 显示哈希算法和盐长度
+            self.verify_hash_algo_label.setVisible(True)
+            self.verify_hash_algo_combo.setVisible(True)
+            self.verify_pss_salt_length_label.setVisible(True)
+            self.verify_pss_salt_length.setVisible(True)
+
+        elif algorithm == "ECDSA":
+            # 显示哈希算法和ECDSA曲线
+            self.verify_hash_algo_label.setVisible(True)
+            self.verify_hash_algo_combo.setVisible(True)
+            self.verify_ecdsa_curve_label.setVisible(True)
+            self.verify_ecdsa_curve_combo.setVisible(True)
+
+        elif algorithm == "EdDSA":
+            # 只显示EdDSA曲线
+            self.verify_eddsa_curve_label.setVisible(True)
+            self.verify_eddsa_curve_combo.setVisible(True)
+
     def on_sign_algorithm_changed(self, index):
         """签名算法变更处理"""
         self.update_sign_algorithm_info()
+        self.update_sign_algorithm_params()
 
     def on_verify_algorithm_changed(self, index):
         """验证算法变更处理"""
         self.update_verify_algorithm_info()
+        self.update_verify_algorithm_params()
 
     def toggle_key_input_mode(self, checked):
         """切换私钥输入模式"""
@@ -852,6 +1078,52 @@ class SignatureView(QWidget):
             QMessageBox.warning(self, "错误", f"读取签名失败: {str(e)}")
             return None
 
+    def get_sign_algorithm_params(self) -> Dict[str, Any]:
+        """获取签名算法参数"""
+        algorithm = self.sign_algo_combo.currentText()
+        params = {}
+
+        # 根据算法获取相应参数
+        if algorithm == "RSA_PKCS1v15":
+            params["hash_algorithm"] = self.sign_hash_algo_combo.currentText()
+            params["key_size"] = int(self.sign_rsa_key_size_combo.currentText())
+
+        elif algorithm == "RSA_PSS":
+            params["hash_algorithm"] = self.sign_hash_algo_combo.currentText()
+            params["key_size"] = int(self.sign_rsa_key_size_combo.currentText())
+            params["salt_length"] = self.sign_pss_salt_length.value()
+
+        elif algorithm == "ECDSA":
+            params["hash_algorithm"] = self.sign_hash_algo_combo.currentText()
+            params["curve"] = self.sign_ecdsa_curve_combo.currentText()
+
+        elif algorithm == "EdDSA":
+            params["curve"] = self.sign_eddsa_curve_combo.currentText()
+
+        return params
+
+    def get_verify_algorithm_params(self) -> Dict[str, Any]:
+        """获取验证算法参数"""
+        algorithm = self.verify_algo_combo.currentText()
+        params = {}
+
+        # 根据算法获取相应参数
+        if algorithm == "RSA_PKCS1v15":
+            params["hash_algorithm"] = self.verify_hash_algo_combo.currentText()
+
+        elif algorithm == "RSA_PSS":
+            params["hash_algorithm"] = self.verify_hash_algo_combo.currentText()
+            params["salt_length"] = self.verify_pss_salt_length.value()
+
+        elif algorithm == "ECDSA":
+            params["hash_algorithm"] = self.verify_hash_algo_combo.currentText()
+            params["curve"] = self.verify_ecdsa_curve_combo.currentText()
+
+        elif algorithm == "EdDSA":
+            params["curve"] = self.verify_eddsa_curve_combo.currentText()
+
+        return params
+
     def generate_signature(self):
         """生成签名"""
         # 获取算法
@@ -882,10 +1154,17 @@ class SignatureView(QWidget):
         if data is None:
             return
 
+        # 获取算法特定参数
+        algo_params = self.get_sign_algorithm_params()
+
         try:
             # 执行签名操作
-            signature = sign(
-                data=data, key=key_data, algorithm=algorithm, password=password
+            signature = sign_data(
+                data=data,
+                key=key_data,
+                algorithm=algorithm,
+                password=password,
+                **algo_params,
             )
 
             # 保存签名
@@ -996,26 +1275,49 @@ class SignatureView(QWidget):
         if signature is None:
             return
 
-        try:
-            # 导入验证签名函数
-            from core.signature import verify_signature
+        # 获取算法特定参数
+        algo_params = self.get_verify_algorithm_params()
 
-            # 验证签名
+        try:
+            # 执行验证操作
             result = verify_signature(
-                data=data, signature=signature, key=key_data, algorithm=algorithm
+                data=data,
+                signature=signature,
+                key=key_data,
+                algorithm=algorithm,
+                **algo_params,
             )
 
+            # 显示验证结果
             if result:
-                self.verify_result.setText("✅ 签名验证成功！数据完整性和来源已确认。")
-                self.verify_result.setStyleSheet("color: green; font-weight: bold;")
-            else:
-                self.verify_result.setText(
-                    "❌ 签名验证失败！数据可能已被篡改或签名无效。"
+                self.verify_result.setText("✓ 签名验证成功")
+                self.verify_result.setStyleSheet(
+                    "color: green; font-weight: bold; font-size: 16px;"
                 )
-                self.verify_result.setStyleSheet("color: red; font-weight: bold;")
+            else:
+                self.verify_result.setText("✗ 签名验证失败")
+                self.verify_result.setStyleSheet(
+                    "color: red; font-weight: bold; font-size: 16px;"
+                )
 
         except Exception as e:
-            self.verify_result.setText(f"❌ 验证过程出错: {str(e)}")
+            error_msg = str(e)
+
+            # 检查是否是公钥相关错误
+            if (
+                "Could not deserialize key data" in error_msg
+                or "unsupported" in error_msg.lower()
+                or "public key" in error_msg.lower()
+                or "密钥格式" in error_msg
+            ):
+                QMessageBox.critical(self, "验证失败", "请填充或选择正确公钥文件")
+            else:
+                QMessageBox.critical(
+                    self, "验证失败", f"验证签名时发生错误: {error_msg}"
+                )
+
+            # 清除之前的验证结果
+            self.verify_result.setText("验证失败")
             self.verify_result.setStyleSheet("color: red;")
 
     def clear_verify_fields(self):
@@ -1026,6 +1328,6 @@ class SignatureView(QWidget):
         self.verify_key_file_path.clear()
         self.signature_input.clear()
         self.signature_file_path.clear()
-        self.verify_result.setText('请点击"验证签名"按钮进行验证')
+        self.verify_result.clear()
         self.verify_result.setStyleSheet("")
         self.verify_file_info.clear()

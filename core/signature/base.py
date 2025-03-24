@@ -1,13 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 
 class SignatureBase(ABC):
     """数字签名基类, 定义所有签名算法的通用接口"""
 
     @abstractmethod
-    def generate_key_pair(self, **kwargs) -> Tuple:
+    def generate_key_pair(self, key_size: Optional[int] = None, **kwargs) -> Tuple:
         """生成密钥对
+
+        Args:
+            key_size: 密钥长度(位), 如果为None则使用算法默认值
+            **kwargs: 其他算法特定参数
 
         Returns:
             Tuple: (私钥, 公钥)
@@ -21,6 +25,7 @@ class SignatureBase(ABC):
         Args:
             data: 要签名的数据
             private_key: 私钥
+            **kwargs: 其他算法特定参数, 如哈希算法
 
         Returns:
             bytes: 签名结果
@@ -37,6 +42,7 @@ class SignatureBase(ABC):
             data: 原始数据
             signature: 签名
             public_key: 公钥
+            **kwargs: 其他算法特定参数, 如哈希算法
 
         Returns:
             bool: 验证是否通过
@@ -49,6 +55,7 @@ class SignatureBase(ABC):
 
         Args:
             path: 私钥文件路径
+            **kwargs: 其他参数，如密码
 
         Returns:
             私钥对象
@@ -61,9 +68,37 @@ class SignatureBase(ABC):
 
         Args:
             path: 公钥文件路径
+            **kwargs: 其他参数
 
         Returns:
             公钥对象
+        """
+        pass
+
+    @abstractmethod
+    def set_hash_algorithm(self, hash_algorithm: Any) -> None:
+        """设置哈希算法
+
+        Args:
+            hash_algorithm: 哈希算法对象或算法名称
+        """
+        pass
+
+    @abstractmethod
+    def get_supported_key_sizes(self) -> Dict[str, int]:
+        """获取支持的密钥长度
+
+        Returns:
+            Dict[str, int]: 密钥长度名称和对应的位数, 如 {"最小": 1024, "默认": 2048, "最大": 4096}
+        """
+        pass
+
+    @abstractmethod
+    def get_supported_hash_algorithms(self) -> Dict[str, Any]:
+        """获取支持的哈希算法
+
+        Returns:
+            Dict[str, Any]: 哈希算法名称和对应的算法对象
         """
         pass
 

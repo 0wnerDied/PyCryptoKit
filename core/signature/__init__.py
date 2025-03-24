@@ -1,70 +1,66 @@
 """
-PyCryptoKit 数字签名模块
+签名算法模块
 
-提供多种数字签名算法的实现, 包括 RSA、ECDSA 等。
+提供多种数字签名算法实现，包括RSA、ECDSA和EdDSA
 """
 
-from typing import Any, Dict, List, Tuple, Type
+from typing import Any, Dict, List, Union, Tuple
 
-# 导入所有签名算法实现
+# 导入所有签名算法实现类
 from .base import SignatureBase
+from .RSA_sig import RSASignature, RSA_PKCS1v15Signature, RSA_PSSSignature
 from .ECDSA_sig import ECDSASignature
 from .EdDSA_sig import EdDSASignature
-from .RSA_sig import RSASignature, RSA_PKCS1v15Signature, RSA_PSSSignature
 
-# 算法注册表
-# 格式: {算法名称: (算法类, 描述, 默认参数)}
-SIGNATURE_ALGORITHMS: Dict[str, Tuple[Type[SignatureBase], str, Dict[str, Any]]] = {
-    "RSA": (
+# 算法映射表: 算法名称 -> (算法类, 描述, 默认参数)
+SIGNATURE_ALGORITHMS = {
+    "RSA_PKCS1v15": (
         RSA_PKCS1v15Signature,
-        "传统 RSA 签名算法, 使用 PKCS#1 v1.5 填充",
-        {"哈希算法": "SHA256"},
+        "RSA签名 (使用PKCS#1 v1.5填充)",
+        {"常用哈希算法": "SHA256"},
     ),
-    "RSA-PSS": (
+    "RSA_PSS": (
         RSA_PSSSignature,
-        "RSA-PSS 签名算法, 使用 PSS 填充",
-        {"哈希算法": "SHA256", "盐长度": 32},
+        "RSA-PSS签名",
+        {"常用哈希算法": "SHA256", "盐值长度": 32},
     ),
     "ECDSA": (
         ECDSASignature,
-        "ECDSA 椭圆曲线数字签名算法",
-        {"曲线": "SECP256R1", "哈希算法": "SHA256"},
+        "ECDSA签名",
+        {"常用曲线": "SECP256R1", "常用哈希算法": "SHA256"},
     ),
     "EdDSA": (
         EdDSASignature,
-        "EdDSA 爱德华兹曲线数字签名算法",
-        {"曲线": "ED25519"},
+        "EdDSA签名 (Ed25519/Ed448)",
+        {"常用曲线": "Ed25519"},
     ),
 }
 
-# 导出所有算法名称
-ALL_ALGORITHMS: List[str] = list(SIGNATURE_ALGORITHMS.keys())
-
-# 导入工厂类
-from .factory import SignatureFactory
+# 所有支持的算法列表
+ALL_ALGORITHMS = list(SIGNATURE_ALGORITHMS.keys())
 
 
-# 便捷函数
 def create_signature(algorithm: str, **kwargs) -> SignatureBase:
     """
-    创建签名算法实例的便捷函数
+    创建指定的签名算法实例
 
     Args:
-        algorithm: 算法名称
-        **kwargs: 传递给签名算法构造函数的参数
+        algorithm: 算法名称, 如 "RSA", "ECDSA", "EdDSA"
+        **kwargs: 传递给算法构造函数的参数
 
     Returns:
         SignatureBase: 签名算法实例
 
     Raises:
         ValueError: 如果算法不存在
-        TypeError: 如果参数类型不正确
     """
+    from .factory import SignatureFactory
+
     return SignatureFactory.create(algorithm, **kwargs)
 
 
-def sign(
-    data: bytes, key: bytes, algorithm: str, password: bytes = None, **kwargs
+def sign_data(
+    data: Union[bytes, str], key, algorithm: str, password: bytes = None, **kwargs
 ) -> bytes:
     """
     使用指定算法和私钥对数据进行签名
@@ -87,7 +83,7 @@ def sign(
 
 
 def verify_signature(
-    data: bytes, signature: bytes, key: bytes, algorithm: str, **kwargs
+    data: Union[bytes, str], signature: bytes, key, algorithm: str, **kwargs
 ) -> bool:
     """
     使用指定算法和公钥验证数据签名
@@ -118,6 +114,8 @@ def list_algorithms() -> List[str]:
     Returns:
         List[str]: 算法名称列表
     """
+    from .factory import SignatureFactory
+
     return SignatureFactory.list_algorithms()
 
 
@@ -134,7 +132,24 @@ def get_algorithm_info(algorithm: str) -> Dict[str, Any]:
     Raises:
         ValueError: 如果算法不存在
     """
+    from .factory import SignatureFactory
+
     return SignatureFactory.get_algorithm_info(algorithm)
+
+
+def generate_key_pair(algorithm: str, **kwargs) -> Tuple:
+    """
+    使用指定算法生成密钥对
+
+    Args:
+        algorithm: 签名算法名称
+        **kwargs: 算法特定参数，如密钥长度、曲线类型等
+
+    Returns:
+        Tuple: (私钥, 公钥)
+    """
+    signature_algo = create_signature(algorithm=algorithm, **kwargs)
+    return signature_algo.generate_key_pair(**kwargs)
 
 
 # 导出所有类和函数
@@ -145,9 +160,11 @@ __all__ = [
     "RSA_PSSSignature",
     "ECDSASignature",
     "EdDSASignature",
-    "SignatureFactory",
     "create_signature",
+    "sign_data",
+    "verify_signature",
     "list_algorithms",
     "get_algorithm_info",
+    "generate_key_pair",
     "ALL_ALGORITHMS",
 ]

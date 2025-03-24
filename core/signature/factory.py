@@ -65,8 +65,17 @@ class SignatureFactory:
         创建指定的签名算法实例
 
         Args:
-            algorithm: 算法名称, 如 "RSA", "ECDSA"
+            algorithm: 算法名称, 如 "RSA", "ECDSA", "EdDSA"
             **kwargs: 传递给算法构造函数的参数
+                      RSA 可接受: hash_algorithm, key_size
+                      ECDSA 可接受: hash_algorithm, curve
+                      EdDSA 可接受: curve, context
+
+                      参数也可以使用中文键名:
+                      "哈希算法" -> hash_algorithm
+                      "密钥长度" -> key_size
+                      "曲线" -> curve
+                      "上下文" -> context
 
         Returns:
             SignatureBase: 签名算法实例
@@ -87,31 +96,90 @@ class SignatureFactory:
         # 处理特殊参数 (如哈希算法、曲线等)
         processed_kwargs = {}
 
+        # 参数名称映射 (中文 -> 英文)
+        param_mapping = {
+            "哈希算法": "hash_algorithm",
+            "密钥长度": "key_size",
+            "曲线": "curve",
+            "上下文": "context",
+            "盐长度": "salt_length",
+        }
+
+        # 转换中文参数名称为英文
+        for cn_name, en_name in param_mapping.items():
+            if cn_name in kwargs:
+                kwargs[en_name] = kwargs.pop(cn_name)
+
         # 处理哈希算法
-        if "哈希算法" in kwargs:
-            hash_alg = kwargs.pop("哈希算法")
+        if "hash_algorithm" in kwargs:
+            hash_alg = kwargs.pop("hash_algorithm")
             if isinstance(hash_alg, str):
                 hash_alg = hash_alg.upper()
+                # 检查是否是直接的哈希算法类名
                 if hasattr(hashes, hash_alg):
-                    processed_kwargs["哈希算法"] = getattr(hashes, hash_alg)()
+                    processed_kwargs["hash_algorithm"] = getattr(hashes, hash_alg)()
                 else:
                     raise ValueError(f"不支持的哈希算法: {hash_alg}")
             else:
                 # 假设已经是哈希算法实例
-                processed_kwargs["哈希算法"] = hash_alg
+                processed_kwargs["hash_algorithm"] = hash_alg
 
-        # 处理椭圆曲线 (仅适用于 ECDSA)
-        if algorithm == "ECDSA" and "曲线" in kwargs:
-            curve = kwargs.pop("曲线")
+        # 处理椭圆曲线
+        if "curve" in kwargs:
+            curve = kwargs.pop("curve")
             if isinstance(curve, str):
-                curve = curve.upper()
-                if hasattr(ec, curve):
-                    processed_kwargs["曲线"] = getattr(ec, curve)()
-                else:
-                    raise ValueError(f"不支持的椭圆曲线: {curve}")
+                curve_name = curve.upper()
+                if algorithm == "ECDSA":
+                    # ECDSA 使用 cryptography 库的曲线
+                    if hasattr(ec, curve_name) or curve_name in cls.SUPPORTED_CURVES:
+                        if curve_name in cls.SUPPORTED_CURVES:
+                            processed_kwargs["curve"] = cls.SUPPORTED_CURVES[curve_name]
+                        else:
+                            processed_kwargs["curve"] = getattr(ec, curve_name)()
+                    else:
+                        raise ValueError(f"不支持的椭圆曲线: {curve}")
+                elif algorithm == "EdDSA":
+                    # EdDSA 使用 Cryptodome 库的曲线
+                    if curve in ["Ed25519", "Ed448"]:
+                        processed_kwargs["curve"] = curve
+                    else:
+                        raise ValueError(
+                            f"EdDSA 仅支持 Ed25519 或 Ed448 曲线，不支持: {curve}"
+                        )
             else:
                 # 假设已经是曲线实例
-                processed_kwargs["曲线"] = curve
+                processed_kwargs["curve"] = curve
+
+        # 处理密钥长度
+        if "key_size" in kwargs:
+            key_size = kwargs.pop("key_size")
+            if algorithm == "RSA":
+                if isinstance(key_size, int) and key_size in cls.SUPPORTED_KEY_SIZES:
+                    processed_kwargs["key_size"] = key_size
+                else:
+                    raise ValueError(
+                        f"不支持的RSA密钥长度: {key_size}。支持的长度: {list(cls.SUPPORTED_KEY_SIZES)}"
+                    )
+            elif algorithm in ["ECDSA", "EdDSA"]:
+                # 对于ECDSA和EdDSA，密钥长度由曲线决定，忽略此参数
+                pass
+
+        # 处理EdDSA上下文
+        if algorithm == "EdDSA" and "context" in kwargs:
+            context = kwargs.pop("context")
+            if isinstance(context, str):
+                context = context.encode("utf-8")
+            if len(context) > 255:
+                raise ValueError("EdDSA 上下文数据不能超过 255 字节")
+            processed_kwargs["context"] = context
+
+        # 处理RSA-PSS盐长度
+        if algorithm == "RSA_PSS" and "salt_length" in kwargs:
+            salt_length = kwargs.pop("salt_length")
+            if isinstance(salt_length, int) and salt_length > 0:
+                processed_kwargs["salt_length"] = salt_length
+            else:
+                raise ValueError("RSA-PSS 盐长度必须是正整数")
 
         # 合并其他参数
         processed_kwargs.update(kwargs)

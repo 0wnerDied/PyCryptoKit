@@ -1,7 +1,7 @@
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from typing import Literal, Optional, Tuple, Union
+from typing import Dict, Literal, Optional, Tuple, Union, Any
 
 from .base import SignatureBase
 
@@ -9,23 +9,101 @@ from .base import SignatureBase
 class RSASignature(SignatureBase):
     """RSA 签名实现类, 支持 PKCS#1 v1.5 和 PSS 两种填充方式"""
 
-    def __init__(self, hash_algorithm=hashes.SHA256()):
+    # 支持的密钥长度
+    SUPPORTED_KEY_SIZES = {1024, 2048, 3072, 4096}
+    DEFAULT_KEY_SIZE = 2048
+
+    # 支持的哈希算法
+    SUPPORTED_HASH_ALGORITHMS = {
+        "MD5": hashes.MD5(),
+        "SHA1": hashes.SHA1(),
+        "SHA3_224": hashes.SHA3_224(),
+        "SHA3_256": hashes.SHA3_256(),
+        "SHA3_384": hashes.SHA3_384(),
+        "SHA3_512": hashes.SHA3_512(),
+        "SHA224": hashes.SHA224(),
+        "SHA256": hashes.SHA256(),
+        "SHA384": hashes.SHA384(),
+        "SHA512": hashes.SHA512(),
+        "SHA512_224": hashes.SHA512_224(),
+        "SHA512_256": hashes.SHA512_256(),
+        "SM3": hashes.SM3(),
+    }
+    DEFAULT_HASH = "SHA256"
+
+    def __init__(self, hash_algorithm=None):
         """初始化 RSA 签名类
 
         Args:
             hash_algorithm: 哈希算法, 默认为 SHA256
         """
-        self.hash_algorithm = hash_algorithm
+        if hash_algorithm is None:
+            self.hash_algorithm = self.SUPPORTED_HASH_ALGORITHMS[self.DEFAULT_HASH]
+        elif isinstance(hash_algorithm, str):
+            hash_name = hash_algorithm.upper()
+            if hash_name in self.SUPPORTED_HASH_ALGORITHMS:
+                self.hash_algorithm = self.SUPPORTED_HASH_ALGORITHMS[hash_name]
+            else:
+                raise ValueError(f"不支持的哈希算法: {hash_algorithm}")
+        else:
+            # 假设已经是哈希算法实例
+            self.hash_algorithm = hash_algorithm
 
-    def generate_key_pair(self, key_size: int = 2048) -> Tuple:
+    def set_hash_algorithm(self, hash_algorithm: Any) -> None:
+        """设置哈希算法
+
+        Args:
+            hash_algorithm: 哈希算法对象或算法名称
+        """
+        if isinstance(hash_algorithm, str):
+            hash_name = hash_algorithm.upper()
+            if hash_name in self.SUPPORTED_HASH_ALGORITHMS:
+                self.hash_algorithm = self.SUPPORTED_HASH_ALGORITHMS[hash_name]
+            else:
+                raise ValueError(f"不支持的哈希算法: {hash_algorithm}")
+        else:
+            # 假设已经是哈希算法实例
+            self.hash_algorithm = hash_algorithm
+
+    def get_supported_key_sizes(self) -> Dict[str, int]:
+        """获取支持的密钥长度
+
+        Returns:
+            Dict[str, int]: 密钥长度名称和对应的位数
+        """
+        return {
+            "最小": min(self.SUPPORTED_KEY_SIZES),
+            "默认": self.DEFAULT_KEY_SIZE,
+            "最大": max(self.SUPPORTED_KEY_SIZES),
+            "支持的值": list(self.SUPPORTED_KEY_SIZES),
+        }
+
+    def get_supported_hash_algorithms(self) -> Dict[str, Any]:
+        """获取支持的哈希算法
+
+        Returns:
+            Dict[str, Any]: 哈希算法名称和对应的算法对象
+        """
+        return self.SUPPORTED_HASH_ALGORITHMS.copy()
+
+    def generate_key_pair(self, key_size: int = None, **kwargs) -> Tuple:
         """生成 RSA 密钥对
 
         Args:
             key_size: 密钥大小, 默认 2048 位
+            **kwargs: 其他参数
 
         Returns:
             Tuple: (私钥, 公钥)
         """
+        if key_size is None:
+            key_size = self.DEFAULT_KEY_SIZE
+
+        if key_size not in self.SUPPORTED_KEY_SIZES:
+            raise ValueError(
+                f"不支持的RSA密钥长度: {key_size}。支持的长度: {list(self.SUPPORTED_KEY_SIZES)}"
+            )
+
         private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         public_key = private_key.public_key()
         return private_key, public_key
@@ -37,7 +115,8 @@ class RSASignature(SignatureBase):
         password: Optional[bytes] = None,
         padding_mode: Literal["pkcs1v15", "pss"] = "pkcs1v15",
         pss_salt_length: int = 32,
-        **kwargs
+        hash_algorithm: Any = None,
+        **kwargs,
     ) -> bytes:
         """使用 RSA 私钥对数据进行签名
 
@@ -47,11 +126,24 @@ class RSASignature(SignatureBase):
             password: 私钥密码 (如果私钥是字节数据且已加密)
             padding_mode: 填充模式, 可选 "pkcs1v15" (传统RSA) 或 "pss" (RSA-PSS)
             pss_salt_length: PSS 模式的盐长度, 仅在 padding_mode="pss" 时使用
+            hash_algorithm: 可选的哈希算法，覆盖实例默认值
 
         Returns:
             bytes: 签名结果
         """
         data = self._ensure_bytes(data)
+
+        # 使用提供的哈希算法或默认值
+        hash_alg = self.hash_algorithm
+        if hash_algorithm is not None:
+            if isinstance(hash_algorithm, str):
+                hash_name = hash_algorithm.upper()
+                if hash_name in self.SUPPORTED_HASH_ALGORITHMS:
+                    hash_alg = self.SUPPORTED_HASH_ALGORITHMS[hash_name]
+                else:
+                    raise ValueError(f"不支持的哈希算法: {hash_algorithm}")
+            else:
+                hash_alg = hash_algorithm
 
         # 如果 private_key 是字节数据, 则加载它
         if isinstance(private_key, bytes):
@@ -64,7 +156,7 @@ class RSASignature(SignatureBase):
         # 根据填充模式选择不同的填充算法
         if padding_mode == "pss":
             padding_algorithm = padding.PSS(
-                mgf=padding.MGF1(self.hash_algorithm),
+                mgf=padding.MGF1(hash_alg),
                 salt_length=pss_salt_length,
             )
         else:  # 默认使用 pkcs1v15
@@ -74,7 +166,7 @@ class RSASignature(SignatureBase):
         signature = private_key.sign(
             data,
             padding_algorithm,
-            self.hash_algorithm,
+            hash_alg,
         )
         return signature
 
@@ -85,7 +177,8 @@ class RSASignature(SignatureBase):
         public_key,
         padding_mode: Literal["pkcs1v15", "pss"] = "pkcs1v15",
         pss_salt_length: int = 32,
-        **kwargs
+        hash_algorithm: Any = None,
+        **kwargs,
     ) -> bool:
         """使用 RSA 公钥验证签名
 
@@ -95,11 +188,24 @@ class RSASignature(SignatureBase):
             public_key: RSA 公钥或公钥字节数据
             padding_mode: 填充模式, 可选 "pkcs1v15" (传统RSA) 或 "pss" (RSA-PSS)
             pss_salt_length: PSS 模式的盐长度, 仅在 padding_mode="pss" 时使用
+            hash_algorithm: 可选的哈希算法，覆盖实例默认值
 
         Returns:
             bool: 验证是否通过
         """
         data = self._ensure_bytes(data)
+
+        # 使用提供的哈希算法或默认值
+        hash_alg = self.hash_algorithm
+        if hash_algorithm is not None:
+            if isinstance(hash_algorithm, str):
+                hash_name = hash_algorithm.upper()
+                if hash_name in self.SUPPORTED_HASH_ALGORITHMS:
+                    hash_alg = self.SUPPORTED_HASH_ALGORITHMS[hash_name]
+                else:
+                    raise ValueError(f"不支持的哈希算法: {hash_algorithm}")
+            else:
+                hash_alg = hash_algorithm
 
         # 如果 public_key 是字节数据, 则加载它
         if isinstance(public_key, bytes):
@@ -110,7 +216,7 @@ class RSASignature(SignatureBase):
         # 根据填充模式选择不同的填充算法
         if padding_mode == "pss":
             padding_algorithm = padding.PSS(
-                mgf=padding.MGF1(self.hash_algorithm),
+                mgf=padding.MGF1(hash_alg),
                 salt_length=pss_salt_length,
             )
         else:  # 默认使用 pkcs1v15
@@ -121,7 +227,7 @@ class RSASignature(SignatureBase):
                 signature,
                 data,
                 padding_algorithm,
-                self.hash_algorithm,
+                hash_alg,
             )
             return True
         except InvalidSignature:
@@ -145,7 +251,7 @@ class RSASignature(SignatureBase):
         )
         return private_key
 
-    def load_public_key(self, path: str):
+    def load_public_key(self, path: str, **kwargs):
         """从文件加载 RSA 公钥
 
         Args:
@@ -182,7 +288,8 @@ class RSA_PKCS1v15Signature(RSASignature):
         data: Union[bytes, str],
         private_key,
         password: Optional[bytes] = None,
-        **kwargs
+        hash_algorithm: Any = None,
+        **kwargs,
     ) -> bytes:
         """使用传统 RSA 签名 (PKCS#1 v1.5 填充)
 
@@ -190,6 +297,7 @@ class RSA_PKCS1v15Signature(RSASignature):
             data: 要签名的数据
             private_key: RSA 私钥或私钥字节数据
             password: 私钥密码 (如果私钥是字节数据且已加密)
+            hash_algorithm: 可选的哈希算法，覆盖实例默认值
 
         Returns:
             bytes: 签名结果
@@ -199,11 +307,17 @@ class RSA_PKCS1v15Signature(RSASignature):
             private_key=private_key,
             password=password,
             padding_mode="pkcs1v15",
-            **kwargs
+            hash_algorithm=hash_algorithm,
+            **kwargs,
         )
 
     def verify(
-        self, data: Union[bytes, str], signature: bytes, public_key, **kwargs
+        self,
+        data: Union[bytes, str],
+        signature: bytes,
+        public_key,
+        hash_algorithm: Any = None,
+        **kwargs,
     ) -> bool:
         """使用传统 RSA 验证签名 (PKCS#1 v1.5 填充)
 
@@ -211,6 +325,7 @@ class RSA_PKCS1v15Signature(RSASignature):
             data: 原始数据
             signature: 签名
             public_key: RSA 公钥或公钥字节数据
+            hash_algorithm: 可选的哈希算法，覆盖实例默认值
 
         Returns:
             bool: 验证是否通过
@@ -220,14 +335,15 @@ class RSA_PKCS1v15Signature(RSASignature):
             signature=signature,
             public_key=public_key,
             padding_mode="pkcs1v15",
-            **kwargs
+            hash_algorithm=hash_algorithm,
+            **kwargs,
         )
 
 
 class RSA_PSSSignature(RSASignature):
     """RSA-PSS 签名实现类"""
 
-    def __init__(self, hash_algorithm=hashes.SHA256(), salt_length: int = 32):
+    def __init__(self, hash_algorithm=None, salt_length: int = 32):
         """初始化 RSA-PSS 签名类
 
         Args:
@@ -242,7 +358,9 @@ class RSA_PSSSignature(RSASignature):
         data: Union[bytes, str],
         private_key,
         password: Optional[bytes] = None,
-        **kwargs
+        hash_algorithm: Any = None,
+        salt_length: int = None,
+        **kwargs,
     ) -> bytes:
         """使用 RSA-PSS 签名
 
@@ -250,6 +368,8 @@ class RSA_PSSSignature(RSASignature):
             data: 要签名的数据
             private_key: RSA 私钥或私钥字节数据
             password: 私钥密码 (如果私钥是字节数据且已加密)
+            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            salt_length: 可选的盐长度，覆盖实例默认值
 
         Returns:
             bytes: 签名结果
@@ -259,12 +379,21 @@ class RSA_PSSSignature(RSASignature):
             private_key=private_key,
             password=password,
             padding_mode="pss",
-            pss_salt_length=self.salt_length,
-            **kwargs
+            pss_salt_length=(
+                salt_length if salt_length is not None else self.salt_length
+            ),
+            hash_algorithm=hash_algorithm,
+            **kwargs,
         )
 
     def verify(
-        self, data: Union[bytes, str], signature: bytes, public_key, **kwargs
+        self,
+        data: Union[bytes, str],
+        signature: bytes,
+        public_key,
+        hash_algorithm: Any = None,
+        salt_length: int = None,
+        **kwargs,
     ) -> bool:
         """使用 RSA-PSS 验证签名
 
@@ -272,6 +401,8 @@ class RSA_PSSSignature(RSASignature):
             data: 原始数据
             signature: 签名
             public_key: RSA 公钥或公钥字节数据
+            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            salt_length: 可选的盐长度，覆盖实例默认值
 
         Returns:
             bool: 验证是否通过
@@ -281,6 +412,9 @@ class RSA_PSSSignature(RSASignature):
             signature=signature,
             public_key=public_key,
             padding_mode="pss",
-            pss_salt_length=self.salt_length,
-            **kwargs
+            pss_salt_length=(
+                salt_length if salt_length is not None else self.salt_length
+            ),
+            hash_algorithm=hash_algorithm,
+            **kwargs,
         )

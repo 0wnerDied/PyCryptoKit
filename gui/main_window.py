@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
-        # 创建主容器，用于应用圆角
+        # 创建主容器, 用于应用圆角
         main_container = QWidget()
         main_layout = QVBoxLayout(main_container)
         main_layout.setContentsMargins(10, 10, 10, 10)
@@ -68,7 +68,7 @@ class MainWindow(QMainWindow):
 
     def apply_styles(self):
         """
-        应用样式表，实现圆角效果，同时保持暗黑模式兼容性
+        应用样式表, 实现圆角效果, 同时保持暗黑模式兼容性
         """
         self.setStyleSheet(
             """

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class ECCKey(AsymmetricKey):
-    """椭圆曲线密钥类，包装Cryptography库的ECC密钥"""
+    """椭圆曲线密钥类, 包装Cryptography库的ECC密钥"""
 
     def __init__(self, key_data, key_type: str):
         super().__init__(key_data, key_type, ECC.algorithm_name())
@@ -83,7 +83,7 @@ class ECCKey(AsymmetricKey):
 
 
 class ECC(AsymmetricCipher):
-    """椭圆曲线加密算法实现，包装Cryptography库"""
+    """椭圆曲线加密算法实现, 包装Cryptography库"""
 
     # 支持的曲线类型
     _CURVES = {
@@ -107,7 +107,7 @@ class ECC(AsymmetricCipher):
         生成ECC密钥对
 
         Args:
-            curve: 椭圆曲线类型，默认为SECP256R1
+            curve: 椭圆曲线类型, 默认为SECP256R1
 
         Returns:
             包含公钥和私钥的KeyPair对象
@@ -116,7 +116,7 @@ class ECC(AsymmetricCipher):
             # 验证曲线类型
             if curve not in cls._CURVES:
                 raise ValueError(
-                    f"不支持的曲线类型: {curve}，支持的类型: {', '.join(cls._CURVES.keys())}"
+                    f"不支持的曲线类型: {curve}, 支持的类型: {', '.join(cls._CURVES.keys())}"
                 )
 
             curve_obj = cls._CURVES[curve]

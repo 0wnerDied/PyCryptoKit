@@ -1,7 +1,7 @@
 """
 签名算法模块
 
-提供多种数字签名算法实现，包括RSA、ECDSA和EdDSA
+提供多种数字签名算法实现, 包括RSA、ECDSA和EdDSA
 """
 
 from typing import Any, Dict, List, Union, Tuple
@@ -143,7 +143,7 @@ def generate_key_pair(algorithm: str, **kwargs) -> Tuple:
 
     Args:
         algorithm: 签名算法名称
-        **kwargs: 算法特定参数，如密钥长度、曲线类型等
+        **kwargs: 算法特定参数, 如密钥长度、曲线类型等
 
     Returns:
         Tuple: (私钥, 公钥)

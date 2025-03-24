@@ -31,7 +31,7 @@ class AsymmetricCipherFactory:
         获取指定名称的加密算法
 
         Args:
-            name: 算法名称，如果为None则返回默认算法
+            name: 算法名称, 如果为None则返回默认算法
 
         Returns:
             算法类
@@ -58,7 +58,7 @@ class AsymmetricCipherFactory:
         使用指定算法创建密钥对
 
         Args:
-            algorithm: 算法名称，如果为None则使用默认算法
+            algorithm: 算法名称, 如果为None则使用默认算法
             key_size: 密钥大小
             **kwargs: 其他参数
 

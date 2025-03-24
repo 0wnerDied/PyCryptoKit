@@ -126,7 +126,7 @@ class RSASignature(SignatureBase):
             password: 私钥密码 (如果私钥是字节数据且已加密)
             padding_mode: 填充模式, 可选 "pkcs1v15" (传统RSA) 或 "pss" (RSA-PSS)
             pss_salt_length: PSS 模式的盐长度, 仅在 padding_mode="pss" 时使用
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
 
         Returns:
             bytes: 签名结果
@@ -188,7 +188,7 @@ class RSASignature(SignatureBase):
             public_key: RSA 公钥或公钥字节数据
             padding_mode: 填充模式, 可选 "pkcs1v15" (传统RSA) 或 "pss" (RSA-PSS)
             pss_salt_length: PSS 模式的盐长度, 仅在 padding_mode="pss" 时使用
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
 
         Returns:
             bool: 验证是否通过
@@ -297,7 +297,7 @@ class RSA_PKCS1v15Signature(RSASignature):
             data: 要签名的数据
             private_key: RSA 私钥或私钥字节数据
             password: 私钥密码 (如果私钥是字节数据且已加密)
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
 
         Returns:
             bytes: 签名结果
@@ -325,7 +325,7 @@ class RSA_PKCS1v15Signature(RSASignature):
             data: 原始数据
             signature: 签名
             public_key: RSA 公钥或公钥字节数据
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
 
         Returns:
             bool: 验证是否通过
@@ -368,8 +368,8 @@ class RSA_PSSSignature(RSASignature):
             data: 要签名的数据
             private_key: RSA 私钥或私钥字节数据
             password: 私钥密码 (如果私钥是字节数据且已加密)
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
-            salt_length: 可选的盐长度，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
+            salt_length: 可选的盐长度, 覆盖实例默认值
 
         Returns:
             bytes: 签名结果
@@ -401,8 +401,8 @@ class RSA_PSSSignature(RSASignature):
             data: 原始数据
             signature: 签名
             public_key: RSA 公钥或公钥字节数据
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
-            salt_length: 可选的盐长度，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
+            salt_length: 可选的盐长度, 覆盖实例默认值
 
         Returns:
             bool: 验证是否通过

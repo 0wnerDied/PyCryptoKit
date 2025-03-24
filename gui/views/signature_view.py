@@ -184,7 +184,7 @@ class SignatureView(QWidget):
         self.sign_algo_params_layout.addWidget(self.sign_pss_salt_length_label, 4, 0)
         self.sign_algo_params_layout.addWidget(self.sign_pss_salt_length, 4, 1)
 
-        # 设置列伸展因子，使控件对齐
+        # 设置列伸展因子, 使控件对齐
         self.sign_algo_params_layout.setColumnStretch(1, 1)
 
         self.sign_algo_params_group.setLayout(self.sign_algo_params_layout)
@@ -463,7 +463,7 @@ class SignatureView(QWidget):
         )
         self.verify_algo_params_layout.addWidget(self.verify_pss_salt_length, 3, 1)
 
-        # 设置列伸展因子，使控件对齐
+        # 设置列伸展因子, 使控件对齐
         self.verify_algo_params_layout.setColumnStretch(1, 1)
 
         self.verify_algo_params_group.setLayout(self.verify_algo_params_layout)

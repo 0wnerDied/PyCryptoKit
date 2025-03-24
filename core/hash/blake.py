@@ -5,7 +5,7 @@ BLAKE 哈希算法实现模块
 """
 
 import blake3
-import hashlib  # 使用内置 hashlib 模块，Python 3.6+ 支持 BLAKE2
+import hashlib  # 使用内置 hashlib 模块, Python 3.6+ 支持 BLAKE2
 from .base import HashBase
 
 
@@ -58,10 +58,10 @@ class BLAKE2bHash(HashBase):
 
     def hexdigest(self) -> str:
         """
-        返回当前数据的十六进制摘要
+        返回当前数据的Hex 摘要
 
         Returns:
-            str: 十六进制格式的哈希摘要
+            str: Hex 格式的哈希摘要
         """
         return self._ctx.hexdigest()
 
@@ -126,10 +126,10 @@ class BLAKE2sHash(HashBase):
 
     def hexdigest(self) -> str:
         """
-        返回当前数据的十六进制摘要
+        返回当前数据的Hex 摘要
 
         Returns:
-            str: 十六进制格式的哈希摘要
+            str: Hex 格式的哈希摘要
         """
         return self._ctx.hexdigest()
 
@@ -189,13 +189,13 @@ class BLAKE3Hash(HashBase):
 
     def hexdigest(self, length=32) -> str:
         """
-        返回当前数据的十六进制摘要
+        返回当前数据的Hex 摘要
 
         Args:
             length: 输出长度, 默认32字节
 
         Returns:
-            str: 十六进制格式的哈希摘要
+            str: Hex 格式的哈希摘要
         """
         return self._ctx.hexdigest(length)
 

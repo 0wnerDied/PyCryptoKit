@@ -55,7 +55,7 @@ class SignatureBase(ABC):
 
         Args:
             path: 私钥文件路径
-            **kwargs: 其他参数，如密码
+            **kwargs: 其他参数, 如密码
 
         Returns:
             私钥对象

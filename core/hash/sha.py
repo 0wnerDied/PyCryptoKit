@@ -180,7 +180,7 @@ class SHA512Hash(SHAHash):
 class CryptographyHash(HashBase):
     """基于 cryptography 库的哈希算法基类"""
 
-    _algorithm_class = None  # 子类需要覆盖，指定 cryptography 算法类
+    _algorithm_class = None  # 子类需要覆盖, 指定 cryptography 算法类
     _algorithm_name = None  # 算法名称
     _digest_size = None  # 摘要大小
     _block_size = None  # 块大小
@@ -254,7 +254,7 @@ class CryptographyHash(HashBase):
 
 
 class SHA512_224Hash(CryptographyHash):
-    """SHA512/224 哈希算法实现，基于 cryptography 库"""
+    """SHA512/224 哈希算法实现, 基于 cryptography 库"""
 
     _algorithm_name = "SHA512_224"
     _algorithm_class = hashes.SHA512_224
@@ -263,7 +263,7 @@ class SHA512_224Hash(CryptographyHash):
 
 
 class SHA512_256Hash(CryptographyHash):
-    """SHA512/256 哈希算法实现，基于 cryptography 库"""
+    """SHA512/256 哈希算法实现, 基于 cryptography 库"""
 
     _algorithm_name = "SHA512_256"
     _algorithm_class = hashes.SHA512_256

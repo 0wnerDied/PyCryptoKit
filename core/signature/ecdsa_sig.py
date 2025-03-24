@@ -121,13 +121,13 @@ class ECDSASignature(SignatureBase):
     def get_supported_key_sizes(self) -> Dict[str, int]:
         """获取支持的密钥长度
 
-        注意: ECDSA密钥长度由曲线决定，不能直接指定
+        注意: ECDSA密钥长度由曲线决定, 不能直接指定
 
         Returns:
             Dict[str, int]: 密钥长度名称和对应的位数
         """
         return {
-            "注意": "ECDSA密钥长度由曲线决定，请使用set_curve方法设置曲线",
+            "注意": "ECDSA密钥长度由曲线决定, 请使用set_curve方法设置曲线",
             "支持的曲线": list(self.SUPPORTED_CURVES.keys()),
         }
 
@@ -143,7 +143,7 @@ class ECDSASignature(SignatureBase):
         """生成 ECDSA 密钥对
 
         Args:
-            **kwargs: 其他参数，可以包含'curve'来指定曲线
+            **kwargs: 其他参数, 可以包含'curve'来指定曲线
 
         Returns:
             Tuple: (私钥, 公钥)
@@ -178,7 +178,7 @@ class ECDSASignature(SignatureBase):
             data: 要签名的数据
             private_key: ECDSA 私钥或私钥字节数据
             password: 私钥密码 (如果私钥是字节数据且已加密)
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
 
         Returns:
             bytes: 签名结果
@@ -220,7 +220,7 @@ class ECDSASignature(SignatureBase):
             data: 原始数据
             signature: 签名
             public_key: ECDSA 公钥或公钥字节数据
-            hash_algorithm: 可选的哈希算法，覆盖实例默认值
+            hash_algorithm: 可选的哈希算法, 覆盖实例默认值
 
         Returns:
             bool: 验证是否通过

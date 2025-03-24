@@ -42,9 +42,9 @@ class EdDSASignature(SignatureBase):
             hash_algorithm: 哈希算法对象或算法名称
 
         Raises:
-            NotImplementedError: EdDSA 使用固定的哈希算法，不能更改
+            NotImplementedError: EdDSA 使用固定的哈希算法, 不能更改
         """
-        raise NotImplementedError("EdDSA 使用固定的哈希算法，不能更改")
+        raise NotImplementedError("EdDSA 使用固定的哈希算法, 不能更改")
 
     def set_curve(self, curve: str) -> None:
         """设置曲线类型
@@ -62,13 +62,13 @@ class EdDSASignature(SignatureBase):
     def get_supported_key_sizes(self) -> Dict[str, Any]:
         """获取支持的密钥长度
 
-        注意: EdDSA密钥长度由曲线决定，不能直接指定
+        注意: EdDSA密钥长度由曲线决定, 不能直接指定
 
         Returns:
             Dict[str, Any]: 密钥长度名称和对应的位数
         """
         return {
-            "注意": "EdDSA密钥长度由曲线决定，不能直接指定",
+            "注意": "EdDSA密钥长度由曲线决定, 不能直接指定",
             "Ed25519": 256,  # 实际密钥长度为32字节(256位)
             "Ed448": 448,  # 实际密钥长度为57字节(456位)
             "支持的曲线": list(self.SUPPORTED_CURVES),
@@ -90,8 +90,8 @@ class EdDSASignature(SignatureBase):
         """生成 EdDSA 密钥对
 
         Args:
-            key_size: 密钥长度(位)，对于EdDSA此参数被忽略，密钥长度由曲线决定
-            **kwargs: 其他参数，可以包含'curve'来指定曲线
+            key_size: 密钥长度(位), 对于EdDSA此参数被忽略, 密钥长度由曲线决定
+            **kwargs: 其他参数, 可以包含'curve'来指定曲线
 
         Returns:
             Tuple: (私钥, 公钥)
@@ -120,7 +120,7 @@ class EdDSASignature(SignatureBase):
             data: 要签名的数据
             private_key: EdDSA 私钥对象或 PEM 格式的私钥字节数据
             password: 私钥密码 (如果私钥是 PEM 格式且已加密)
-            **kwargs: 其他参数，可以包含'context'来指定上下文
+            **kwargs: 其他参数, 可以包含'context'来指定上下文
 
         Returns:
             bytes: 签名结果
@@ -152,7 +152,7 @@ class EdDSASignature(SignatureBase):
             data: 原始数据
             signature: 签名
             public_key: EdDSA 公钥对象或 PEM 格式的公钥字节数据
-            **kwargs: 其他参数，可以包含'context'来指定上下文
+            **kwargs: 其他参数, 可以包含'context'来指定上下文
 
         Returns:
             bool: 验证是否通过

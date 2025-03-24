@@ -144,7 +144,7 @@ class SignatureFactory:
                         processed_kwargs["curve"] = curve
                     else:
                         raise ValueError(
-                            f"EdDSA 仅支持 Ed25519 或 Ed448 曲线，不支持: {curve}"
+                            f"EdDSA 仅支持 Ed25519 或 Ed448 曲线, 不支持: {curve}"
                         )
             else:
                 # 假设已经是曲线实例
@@ -161,7 +161,7 @@ class SignatureFactory:
                         f"不支持的RSA密钥长度: {key_size}。支持的长度: {list(cls.SUPPORTED_KEY_SIZES)}"
                     )
             elif algorithm in ["ECDSA", "EdDSA"]:
-                # 对于ECDSA和EdDSA，密钥长度由曲线决定，忽略此参数
+                # 对于ECDSA和EdDSA, 密钥长度由曲线决定, 忽略此参数
                 pass
 
         # 处理EdDSA上下文

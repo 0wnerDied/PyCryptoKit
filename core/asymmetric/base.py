@@ -12,18 +12,18 @@ class AsymmetricKey:
 
     def to_bytes(self) -> bytes:
         """将密钥转换为字节格式"""
-        # 这个方法应该在子类中实现，根据具体库的API
+        # 这个方法应该在子类中实现, 根据具体库的API
         raise NotImplementedError("Must be implemented by subclass")
 
     def to_pem(self) -> bytes:
         """将密钥转换为PEM格式"""
-        # 这个方法应该在子类中实现，根据具体库的API
+        # 这个方法应该在子类中实现, 根据具体库的API
         raise NotImplementedError("Must be implemented by subclass")
 
     @classmethod
     def from_bytes(cls, data: bytes, key_type: str, algorithm: str) -> "AsymmetricKey":
         """从字节创建密钥"""
-        # 这个方法应该在子类中实现，根据具体库的API
+        # 这个方法应该在子类中实现, 根据具体库的API
         raise NotImplementedError("Must be implemented by subclass")
 
     @classmethod
@@ -31,7 +31,7 @@ class AsymmetricKey:
         cls, pem_data: bytes, key_type: str, algorithm: str
     ) -> "AsymmetricKey":
         """从PEM格式创建密钥"""
-        # 这个方法应该在子类中实现，根据具体库的API
+        # 这个方法应该在子类中实现, 根据具体库的API
         raise NotImplementedError("Must be implemented by subclass")
 
 

@@ -181,7 +181,7 @@ class AESCipher(SymmetricCipher):
                 actual_ciphertext = ciphertext[12:-16]
                 tag = ciphertext[-16:]
 
-                # 使用提供的nonce，如果没有提供则使用存储的nonce
+                # 使用提供的nonce, 如果没有提供则使用存储的nonce
                 nonce = iv if iv is not None else stored_nonce
                 if isinstance(nonce, str):
                     nonce = nonce.encode("utf-8")[:12].ljust(12, b"\0")

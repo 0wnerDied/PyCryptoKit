@@ -7,7 +7,7 @@ from .base import AsymmetricCipher, AsymmetricKey, KeyPair
 
 
 class RSAKey(AsymmetricKey):
-    """RSA密钥类，包装Cryptography库的RSA密钥"""
+    """RSA密钥类, 包装Cryptography库的RSA密钥"""
 
     def __init__(self, key_data, key_type: str):
         super().__init__(key_data, key_type, RSA.algorithm_name())
@@ -106,7 +106,7 @@ class RSAKey(AsymmetricKey):
 
 
 class RSA(AsymmetricCipher):
-    """RSA加密算法实现，包装Cryptography库"""
+    """RSA加密算法实现, 包装Cryptography库"""
 
     @classmethod
     def algorithm_name(cls) -> str:
@@ -118,7 +118,7 @@ class RSA(AsymmetricCipher):
         生成RSA密钥对
 
         Args:
-            key_size: 密钥位数，至少2048位
+            key_size: 密钥位数, 至少2048位
 
         Returns:
             包含公钥和私钥的KeyPair对象
@@ -198,7 +198,7 @@ class RSA(AsymmetricCipher):
         Args:
             data: 要加密的数据
             public_key: RSA公钥
-            chunk_size: 分块大小，如果为None则根据密钥大小自动计算
+            chunk_size: 分块大小, 如果为None则根据密钥大小自动计算
 
         Returns:
             加密后的数据
@@ -208,7 +208,7 @@ class RSA(AsymmetricCipher):
 
         # 计算最大可加密大小 (密钥大小/8 - OAEP填充开销)
         # OAEP开销 = 2 * hash_size + 2
-        # 对于SHA256, hash_size = 32字节，所以开销是66字节
+        # 对于SHA256, hash_size = 32字节, 所以开销是66字节
         max_chunk_size = public_key.key_data.key_size // 8 - 66
 
         # 如果提供了chunk_size, 确保不超过最大值

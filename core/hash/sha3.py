@@ -219,7 +219,7 @@ class SHAKEHash(HashBase):
 
     def reset(self) -> None:
         """重置哈希对象的状态"""
-        # 修复: 创建时不传递参数，在 digest/hexdigest 时指定长度
+        # 修复: 创建时不传递参数, 在 digest/hexdigest 时指定长度
         self._hash = getattr(hashlib, self._algorithm_name.lower())()
 
 

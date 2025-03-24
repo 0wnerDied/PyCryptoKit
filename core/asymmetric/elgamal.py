@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class ElGamalKey(AsymmetricKey):
-    """ElGamal密钥类，包装DSA/DH参数和密钥"""
+    """ElGamal密钥类, 包装DSA/DH参数和密钥"""
 
     def __init__(self, key_data, key_type: str, params=None):
         super().__init__(key_data, key_type, ElGamal.algorithm_name())
@@ -89,14 +89,14 @@ class ElGamal(AsymmetricCipher):
         生成ElGamal密钥对
 
         Args:
-            key_size: 密钥大小，默认2048位
+            key_size: 密钥大小, 默认2048位
 
         Returns:
             包含公钥和私钥的KeyPair对象
         """
         try:
-            # 生成DSA参数，我们将使用这些参数来实现ElGamal
-            # DSA参数包含p, q, g值，这些也是ElGamal所需的
+            # 生成DSA参数, 我们将使用这些参数来实现ElGamal
+            # DSA参数包含p, q, g值, 这些也是ElGamal所需的
             parameters = dsa.generate_parameters(
                 key_size=key_size, backend=default_backend()
             )
@@ -142,8 +142,8 @@ class ElGamal(AsymmetricCipher):
             ephemeral_private_key = parameters.generate_private_key()
             ephemeral_public_key = ephemeral_private_key.public_key()
 
-            # 计算共享密钥 - 在ElGamal中，这相当于g^(xy) mod p
-            # 由于cryptography库没有直接提供ElGamal，我们使用DH密钥交换来模拟
+            # 计算共享密钥 - 在ElGamal中, 这相当于g^(xy) mod p
+            # 由于cryptography库没有直接提供ElGamal, 我们使用DH密钥交换来模拟
             # 将DSA公钥数字参数提取出来
             dsa_numbers = dsa_public_key.public_numbers()
             p = dsa_numbers.parameter_numbers.p

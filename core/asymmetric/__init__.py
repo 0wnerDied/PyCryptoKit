@@ -1,31 +1,24 @@
 """
-提供多种非对称加密算法的实现, 包括 RSA、ECC 和 ElGamal。
+非对称加密模块
+提供RSA、ECC、ElGamal等非对称加密算法
 """
 
-# 导入基础类
-from .base import AsymmetricKey, KeyPair
-
-# 导入工厂类
+from .base import AsymmetricCipher, AsymmetricKey, KeyPair
 from .factory import AsymmetricCipherFactory
-
-# 导入具体算法实现
 from .rsa import RSA
 from .ecc import ECC
 from .elgamal import ElGamal
 
-# 注册算法到工厂
-AsymmetricCipherFactory.register_algorithm(RSA, set_default=True)
+# 注册算法
+AsymmetricCipherFactory.register_algorithm(RSA, set_default=True)  # 设置RSA为默认算法
 AsymmetricCipherFactory.register_algorithm(ECC)
 AsymmetricCipherFactory.register_algorithm(ElGamal)
 
-# 导出公共API
 __all__ = [
-    # 基础类
+    "AsymmetricCipher",
     "AsymmetricKey",
     "KeyPair",
-    # 工厂类
     "AsymmetricCipherFactory",
-    # 具体算法实现
     "RSA",
     "ECC",
     "ElGamal",

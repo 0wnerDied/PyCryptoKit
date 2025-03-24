@@ -4,8 +4,7 @@ from PySide6.QtCore import Qt
 
 from .views.hash_view import HashView
 from .views.symmetric_view import SymmetricView
-
-# from .views.asymmetric_view import AsymmetricView
+from .views.asymmetric_view import AsymmetricView
 from .views.signature_view import SignatureView
 
 
@@ -45,11 +44,12 @@ class MainWindow(QMainWindow):
         # 添加功能页面并使其可滚动
         self.hash_view = self.create_scrollable_view(HashView())
         self.signature_view = self.create_scrollable_view(SignatureView())
+        self.asymmetric_view = self.create_scrollable_view(AsymmetricView())
         self.symmetric_view = self.create_scrollable_view(SymmetricView())
 
         self.tabs.addTab(self.hash_view, "哈希计算")
         self.tabs.addTab(self.symmetric_view, "对称加密")
-        # self.tabs.addTab(self.asymmetric_view, "非对称加密")
+        self.tabs.addTab(self.asymmetric_view, "密钥生成")
         self.tabs.addTab(self.signature_view, "数字签名")
 
         # 状态栏

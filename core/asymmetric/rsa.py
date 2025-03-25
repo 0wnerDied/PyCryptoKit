@@ -44,7 +44,7 @@ class RSAKey(AsymmetricKey):
 
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
+                format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=encryption_algorithm,
             )
 
@@ -64,7 +64,7 @@ class RSAKey(AsymmetricKey):
 
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
+                format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=encryption_algorithm,
             )
 
@@ -180,7 +180,7 @@ class RSAKey(AsymmetricKey):
                         )
                     key_bytes = self.key_data.private_bytes(
                         encoding=serialization.Encoding.PEM,
-                        format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
+                        format=serialization.PrivateFormat.PKCS8,
                         encryption_algorithm=encryption_algorithm,
                     )
             elif format.lower() == "der":
@@ -197,7 +197,7 @@ class RSAKey(AsymmetricKey):
                         )
                     key_bytes = self.key_data.private_bytes(
                         encoding=serialization.Encoding.DER,
-                        format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
+                        format=serialization.PrivateFormat.PKCS8,
                         encryption_algorithm=encryption_algorithm,
                     )
             elif format.lower() == "openssh":

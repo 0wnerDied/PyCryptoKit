@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Union, Tuple
 
 # 导入所有签名算法实现类
 from .base import SignatureBase
-from .RSA_sig import RSASignature, RSA_PKCS1v15Signature, RSA_PSSSignature
-from .ECDSA_sig import ECDSASignature
-from .EdDSA_sig import EdDSASignature
+from .rsa_sig import RSASignature, RSA_PKCS1v15Signature, RSA_PSSSignature
+from .ecdsa_sig import ECDSASignature
+from .eddsa_sig import EdDSASignature
 
 # 算法映射表: 算法名称 -> (算法类, 描述, 默认参数)
 SIGNATURE_ALGORITHMS = {

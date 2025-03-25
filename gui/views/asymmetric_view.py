@@ -145,6 +145,12 @@ class AsymmetricView(QWidget):
         confirm_layout.addWidget(self.confirm_password)
         password_layout.addLayout(confirm_layout)
 
+        # XML格式密码限制提示
+        self.password_warning = QLabel("XML格式不支持密码加密")
+        self.password_warning.setStyleSheet("color: yellow;")
+        self.password_warning.setVisible(False)
+        password_layout.addWidget(self.password_warning)
+
         password_group.setLayout(password_layout)
         content_layout.addWidget(password_group)
 
@@ -273,6 +279,9 @@ class AsymmetricView(QWidget):
         # 更新格式选项
         self.update_format_options()
 
+        # 更新密码输入框状态
+        self.update_password_field_state()
+
     def update_available_curves(self):
         """根据当前选择的密钥格式更新可用的ECC曲线"""
         # 确保key_format_combo已经初始化
@@ -335,6 +344,36 @@ class AsymmetricView(QWidget):
         # 恢复信号连接
         self.key_format_combo.blockSignals(False)
 
+        # 更新密码输入框状态
+        self.update_password_field_state()
+
+    def update_password_field_state(self):
+        """根据当前格式更新密码输入框状态"""
+        if self.key_format_combo is None:
+            return
+
+        key_format = self.key_format_combo.currentText().lower()
+
+        if key_format == "xml":
+            # XML格式不支持密码，禁用密码输入框
+            self.key_password.setEnabled(False)
+            self.confirm_password.setEnabled(False)
+
+            # 如果已经输入了密码，清空它们
+            if self.key_password.text() or self.confirm_password.text():
+                self.key_password.clear()
+                self.confirm_password.clear()
+
+            # 显示警告
+            self.password_warning.setVisible(True)
+        else:
+            # 其他格式支持密码，启用密码输入框
+            self.key_password.setEnabled(True)
+            self.confirm_password.setEnabled(True)
+
+            # 隐藏警告
+            self.password_warning.setVisible(False)
+
     def on_algorithm_changed(self, index):
         """算法变更处理"""
         self.update_algorithm_info()
@@ -345,6 +384,9 @@ class AsymmetricView(QWidget):
         # 如果当前算法是ECC, 需要更新可用的曲线
         if self.algo_combo.currentText() == "ECC":
             self.update_available_curves()
+
+        # 更新密码输入框状态
+        self.update_password_field_state()
 
     def generate_key_pair(self):
         """生成密钥对"""
@@ -357,6 +399,12 @@ class AsymmetricView(QWidget):
             # 获取密码
             password = self.key_password.text()
             confirm_password = self.confirm_password.text()
+            key_format = self.key_format_combo.currentText().lower()
+
+            # XML格式不使用密码
+            if key_format == "xml":
+                password = ""
+                confirm_password = ""
 
             if password and password != confirm_password:
                 QMessageBox.warning(self, "错误", "两次输入的密码不一致")
@@ -385,8 +433,6 @@ class AsymmetricView(QWidget):
             self.current_key_pair = key_pair
 
             # 显示密钥
-            key_format = self.key_format_combo.currentText().lower()
-
             if key_format == "pem":
                 public_key_str = key_pair.public_key.to_pem().decode("utf-8")
                 private_key_str = key_pair.private_key.to_pem().decode("utf-8")
@@ -431,15 +477,17 @@ class AsymmetricView(QWidget):
         # 检查密码
         password = self.key_password.text()
         confirm_password = self.confirm_password.text()
+        key_format = self.key_format_combo.currentText().lower()
+
+        # XML格式不使用密码
+        if key_format == "xml":
+            password = ""
 
         if password and password != confirm_password:
             QMessageBox.warning(self, "错误", "两次输入的密码不一致")
             return
 
         password_bytes = password.encode("utf-8") if password else None
-
-        # 获取格式
-        key_format = self.key_format_combo.currentText().lower()
 
         # 根据格式确定文件扩展名
         if key_format == "pem":
@@ -507,15 +555,17 @@ class AsymmetricView(QWidget):
         # 检查密码
         password = self.key_password.text()
         confirm_password = self.confirm_password.text()
+        key_format = self.key_format_combo.currentText().lower()
+
+        # XML格式不使用密码
+        if key_format == "xml":
+            password = ""
 
         if password and password != confirm_password:
             QMessageBox.warning(self, "错误", "两次输入的密码不一致")
             return
 
         password_bytes = password.encode("utf-8") if password else None
-
-        # 获取格式
-        key_format = self.key_format_combo.currentText().lower()
 
         # 根据格式确定文件扩展名
         if key_format == "pem":

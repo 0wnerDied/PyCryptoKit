@@ -24,8 +24,9 @@ _RSA_KEY_SIZES = [1024, 2048, 3072, 4096, 8192]
 class RSAKey(AsymmetricKey):
     """RSA密钥类, 包装Cryptography库的RSA密钥"""
 
-    def __init__(self, key_data, key_type: str):
+    def __init__(self, key_data, key_type: str, password: Optional[bytes] = None):
         super().__init__(key_data, key_type, RSA.algorithm_name())
+        self.password = password
 
     def to_pem(self) -> bytes:
         """将密钥转换为PEM格式"""
@@ -35,10 +36,16 @@ class RSAKey(AsymmetricKey):
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_der(self) -> bytes:
@@ -49,10 +56,16 @@ class RSAKey(AsymmetricKey):
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_openssh(self) -> bytes:
@@ -63,10 +76,16 @@ class RSAKey(AsymmetricKey):
                 format=serialization.PublicFormat.OpenSSH,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.OpenSSH,
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_xml(self) -> str:
@@ -142,6 +161,10 @@ class RSAKey(AsymmetricKey):
             password: 加密密码 (仅适用于私钥)
         """
         try:
+            # 如果没有提供密码，但密钥对象有密码，则使用密钥对象的密码
+            if not password and self.password:
+                password = self.password
+
             if format.lower() == "pem":
                 if self.key_type == "public":
                     key_bytes = self.key_data.public_bytes(
@@ -228,6 +251,9 @@ class RSA(AsymmetricCipher):
 
         Args:
             key_size: 密钥大小, 默认2048位
+            **kwargs: 其他参数
+                - public_exponent: 公钥指数, 默认65537
+                - password: 私钥加密密码 (可选)
 
         Returns:
             包含公钥和私钥的KeyPair对象
@@ -241,6 +267,8 @@ class RSA(AsymmetricCipher):
 
             # 获取公钥指数
             public_exponent = kwargs.get("public_exponent", 65537)
+            # 获取密码
+            password = kwargs.get("password")
 
             # 生成私钥
             private_key = rsa.generate_private_key(
@@ -255,7 +283,9 @@ class RSA(AsymmetricCipher):
             logger.info(f"成功生成RSA密钥对, 密钥大小: {key_size}位")
 
             # 创建并返回密钥对
-            return KeyPair(RSAKey(public_key, "public"), RSAKey(private_key, "private"))
+            return KeyPair(
+                RSAKey(public_key, "public"), RSAKey(private_key, "private", password)
+            )
         except Exception as e:
             logger.error(f"生成密钥对失败: {e}")
             raise ValueError(f"生成密钥对失败: {e}")
@@ -371,7 +401,7 @@ class RSA(AsymmetricCipher):
                         public_numbers=public_numbers,
                     )
                     key_obj = private_numbers.private_key(default_backend())
-                    return RSAKey(key_obj, "private")
+                    return RSAKey(key_obj, "private", password)
                 else:
                     key_data = key_data.encode("utf-8")
             elif hasattr(key_data, "read"):  # 如果是文件对象
@@ -398,7 +428,7 @@ class RSA(AsymmetricCipher):
             if not isinstance(key_obj, rsa.RSAPrivateKey):
                 raise ValueError("提供的密钥不是有效的RSA私钥")
 
-            return RSAKey(key_obj, "private")
+            return RSAKey(key_obj, "private", password)
 
         except Exception as e:
             logger.error(f"加载私钥失败: {e}")

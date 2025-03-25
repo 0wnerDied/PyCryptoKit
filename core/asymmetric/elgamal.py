@@ -24,9 +24,12 @@ _ELGAMAL_KEY_SIZES = [1024, 2048, 3072, 4096]
 class ElGamalKey(AsymmetricKey):
     """ElGamal密钥类, 包装DSA/DH参数和密钥"""
 
-    def __init__(self, key_data, key_type: str, params=None):
+    def __init__(
+        self, key_data, key_type: str, params=None, password: Optional[bytes] = None
+    ):
         super().__init__(key_data, key_type, ElGamal.algorithm_name())
         self.params = params  # 存储DH参数
+        self.password = password  # 存储密码
 
     def to_pem(self) -> bytes:
         """将密钥转换为PEM格式"""
@@ -36,10 +39,16 @@ class ElGamalKey(AsymmetricKey):
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_der(self) -> bytes:
@@ -50,10 +59,16 @@ class ElGamalKey(AsymmetricKey):
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_xml(self) -> str:
@@ -133,6 +148,10 @@ class ElGamalKey(AsymmetricKey):
             password: 加密密码 (仅适用于私钥)
         """
         try:
+            # 如果没有提供密码，但密钥对象有密码，则使用密钥对象的密码
+            if not password and self.password:
+                password = self.password
+
             if format.lower() == "pem":
                 if self.key_type == "public":
                     key_bytes = self.key_data.public_bytes(
@@ -201,6 +220,8 @@ class ElGamal(AsymmetricCipher):
 
         Args:
             key_size: 密钥大小, 默认2048位
+            **kwargs: 其他参数
+                - password: 私钥加密密码 (可选)
 
         Returns:
             包含公钥和私钥的KeyPair对象
@@ -211,6 +232,9 @@ class ElGamal(AsymmetricCipher):
                 raise ValueError(
                     f"不支持的密钥大小: {key_size}, 支持的大小: {', '.join(map(str, _ELGAMAL_KEY_SIZES))}"
                 )
+
+            # 获取密码
+            password = kwargs.get("password")
 
             # 生成DSA参数, 我们将使用这些参数来实现ElGamal
             # DSA参数包含p, q, g值, 这些也是ElGamal所需的
@@ -229,7 +253,7 @@ class ElGamal(AsymmetricCipher):
             # 创建并返回密钥对
             return KeyPair(
                 ElGamalKey(public_key, "public", parameters),
-                ElGamalKey(private_key, "private", parameters),
+                ElGamalKey(private_key, "private", parameters, password),
             )
         except Exception as e:
             logger.error(f"生成密钥对失败: {e}")
@@ -375,7 +399,7 @@ class ElGamal(AsymmetricCipher):
 
                     # 创建私钥
                     key_obj = private_numbers.private_key(default_backend())
-                    return ElGamalKey(key_obj, "private", params)
+                    return ElGamalKey(key_obj, "private", params, password)
                 else:
                     key_data = key_data.encode("utf-8")
             elif hasattr(key_data, "read"):  # 如果是文件对象
@@ -405,7 +429,7 @@ class ElGamal(AsymmetricCipher):
                 g=key_obj.private_numbers().public_numbers.parameter_numbers.g,
             ).parameters(default_backend())
 
-            return ElGamalKey(key_obj, "private", params)
+            return ElGamalKey(key_obj, "private", params, password)
 
         except Exception as e:
             logger.error(f"加载私钥失败: {e}")

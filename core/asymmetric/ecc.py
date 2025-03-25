@@ -44,13 +44,15 @@ _ECC_CURVES = {
 class ECCKey(AsymmetricKey):
     """椭圆曲线密钥类, 包装Cryptography库的ECC密钥"""
 
-    def __init__(self, key_data, key_type: str):
+    def __init__(self, key_data, key_type: str, password: Optional[bytes] = None):
         super().__init__(key_data, key_type, ECC.algorithm_name())
         # 存储曲线信息
         if key_type == "public":
             self.curve = key_data.curve
         else:
             self.curve = key_data.curve
+        # 存储密码
+        self.password = password
 
     def to_pem(self) -> bytes:
         """将密钥转换为PEM格式"""
@@ -60,10 +62,16 @@ class ECCKey(AsymmetricKey):
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_der(self) -> bytes:
@@ -74,10 +82,16 @@ class ECCKey(AsymmetricKey):
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,  # 使用传统的OpenSSL格式
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_openssh(self) -> bytes:
@@ -88,10 +102,16 @@ class ECCKey(AsymmetricKey):
                 format=serialization.PublicFormat.OpenSSH,
             )
         else:
+            encryption_algorithm = serialization.NoEncryption()
+            if self.password:
+                encryption_algorithm = serialization.BestAvailableEncryption(
+                    self.password
+                )
+
             return self.key_data.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.OpenSSH,
-                encryption_algorithm=serialization.NoEncryption(),
+                encryption_algorithm=encryption_algorithm,
             )
 
     def to_xml(self) -> str:
@@ -180,6 +200,10 @@ class ECCKey(AsymmetricKey):
             password: 加密密码 (仅适用于私钥)
         """
         try:
+            # 如果没有提供密码，但密钥对象有密码，则使用密钥对象的密码
+            if not password and self.password:
+                password = self.password
+
             if format.lower() == "pem":
                 if self.key_type == "public":
                     key_bytes = self.key_data.public_bytes(
@@ -271,6 +295,8 @@ class ECC(AsymmetricCipher):
 
         Args:
             curve: 椭圆曲线类型, 默认为SECP256R1
+            **kwargs: 其他参数
+                - password: 私钥加密密码 (可选)
 
         Returns:
             包含公钥和私钥的KeyPair对象
@@ -282,6 +308,9 @@ class ECC(AsymmetricCipher):
                 raise ValueError(
                     f"不支持的曲线类型: {curve}, 支持的类型: {', '.join(_ECC_CURVES.keys())}"
                 )
+
+            # 获取密码
+            password = kwargs.get("password")
 
             curve_obj = _ECC_CURVES[curve]
 
@@ -295,8 +324,10 @@ class ECC(AsymmetricCipher):
 
             logger.info(f"成功生成ECC密钥对, 使用曲线: {curve}")
 
-            # 创建并返回密钥对
-            return KeyPair(ECCKey(public_key, "public"), ECCKey(private_key, "private"))
+            # 创建并返回密钥对，将密码传递给私钥
+            return KeyPair(
+                ECCKey(public_key, "public"), ECCKey(private_key, "private", password)
+            )
         except Exception as e:
             logger.error(f"生成密钥对失败: {e}")
             raise ValueError(f"生成密钥对失败: {e}")
@@ -423,7 +454,7 @@ class ECC(AsymmetricCipher):
                         private_value=d, public_numbers=public_numbers
                     )
                     key_obj = private_numbers.private_key(default_backend())
-                    return ECCKey(key_obj, "private")
+                    return ECCKey(key_obj, "private", password)
                 else:
                     key_data = key_data.encode("utf-8")
             elif hasattr(key_data, "read"):  # 如果是文件对象
@@ -450,7 +481,7 @@ class ECC(AsymmetricCipher):
             if not isinstance(key_obj, ec.EllipticCurvePrivateKey):
                 raise ValueError("提供的密钥不是有效的椭圆曲线私钥")
 
-            return ECCKey(key_obj, "private")
+            return ECCKey(key_obj, "private", password)
 
         except Exception as e:
             logger.error(f"加载私钥失败: {e}")

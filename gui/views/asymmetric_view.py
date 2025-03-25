@@ -354,20 +354,32 @@ class AsymmetricView(QWidget):
             return
 
         try:
+            # 获取密码
+            password = self.key_password.text()
+            confirm_password = self.confirm_password.text()
+
+            if password and password != confirm_password:
+                QMessageBox.warning(self, "错误", "两次输入的密码不一致")
+                return
+
+            password_bytes = password.encode("utf-8") if password else None
+
             # 根据算法获取参数
             if algorithm == "RSA" or algorithm == "ElGamal":
                 key_size = int(self.key_size_combo.currentText())
                 key_pair = AsymmetricCipherFactory.create_key_pair(
-                    algorithm, key_size=key_size
+                    algorithm, key_size=key_size, password=password_bytes
                 )
             elif algorithm == "ECC":
                 curve = self.curve_combo.currentText()
                 key_pair = AsymmetricCipherFactory.create_key_pair(
-                    algorithm, curve=curve
+                    algorithm, curve=curve, password=password_bytes
                 )
             else:
                 # 默认参数
-                key_pair = AsymmetricCipherFactory.create_key_pair(algorithm)
+                key_pair = AsymmetricCipherFactory.create_key_pair(
+                    algorithm, password=password_bytes
+                )
 
             # 保存生成的密钥对
             self.current_key_pair = key_pair

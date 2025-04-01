@@ -49,6 +49,12 @@ class AsymmetricView(QWidget):
             "BRAINPOOLP512R1",
         ]
 
+        # Edwards曲线列表
+        self.edwards_curves = ["Ed25519", "Ed448"]
+
+        # OpenSSH格式支持的Edwards曲线
+        self.openssh_supported_edwards = ["Ed25519"]
+
         # OpenSSH格式不支持的算法列表
         self.openssh_unsupported_algorithms = ["ElGamal"]
 
@@ -108,6 +114,7 @@ class AsymmetricView(QWidget):
         # 创建参数标签
         self.key_size_label = QLabel("密钥大小:")
         self.curve_label = QLabel("ECC曲线:")
+        self.edwards_curve_label = QLabel("Edwards曲线:")
 
         # 密钥大小
         self.key_size_combo = QComboBox()
@@ -120,6 +127,11 @@ class AsymmetricView(QWidget):
         # 初始添加所有曲线
         self.curve_combo.addItems(self.all_ecc_curves)
         self.params_form.addRow(self.curve_label, self.curve_combo)
+
+        # Edwards 曲线选择
+        self.edwards_curve_combo = QComboBox()
+        self.edwards_curve_combo.addItems(self.edwards_curves)
+        self.params_form.addRow(self.edwards_curve_label, self.edwards_curve_combo)
 
         algo_layout.addLayout(self.params_form)
         algo_group.setLayout(algo_layout)
@@ -248,6 +260,8 @@ class AsymmetricView(QWidget):
                     info_text = "ECC是一种基于椭圆曲线数学的非对称加密算法, 提供与RSA相同的安全性但使用更短的密钥。\n支持多种椭圆曲线。"
                 elif algorithm == "ElGamal":
                     info_text = "ElGamal是一种基于离散对数问题的非对称加密算法。\n支持密钥大小: 1024, 2048, 3072, 4096位"
+                elif algorithm == "Edwards":
+                    info_text = "Edwards是一种特殊形式的椭圆曲线, 提供高效的数字签名功能。\n支持Ed25519和Ed448曲线, 广泛用于现代密码协议。"
                 else:
                     info_text = f"{algorithm}是一种非对称加密算法。"
 
@@ -259,22 +273,31 @@ class AsymmetricView(QWidget):
         """更新算法参数显示"""
         algorithm = self.algo_combo.currentText()
 
+        # 默认隐藏所有参数
+        self.key_size_label.setVisible(False)
+        self.key_size_combo.setVisible(False)
+        self.curve_label.setVisible(False)
+        self.curve_combo.setVisible(False)
+        self.edwards_curve_label.setVisible(False)
+        self.edwards_curve_combo.setVisible(False)
+
         # 根据算法显示相关参数
         if algorithm == "RSA" or algorithm == "ElGamal":
-            # 显示密钥大小, 隐藏曲线选择
+            # 显示密钥大小
             self.key_size_label.setVisible(True)
             self.key_size_combo.setVisible(True)
-            self.curve_label.setVisible(False)
-            self.curve_combo.setVisible(False)
         elif algorithm == "ECC":
-            # 显示曲线选择, 隐藏密钥大小
-            self.key_size_label.setVisible(False)
-            self.key_size_combo.setVisible(False)
+            # 显示ECC曲线选择
             self.curve_label.setVisible(True)
             self.curve_combo.setVisible(True)
-
             # 更新可用的曲线列表
             self.update_available_curves()
+        elif algorithm == "Edwards":
+            # 显示Edwards曲线选择
+            self.edwards_curve_label.setVisible(True)
+            self.edwards_curve_combo.setVisible(True)
+            # 更新可用的Edwards曲线
+            self.update_available_edwards_curves()
 
         # 更新格式选项
         self.update_format_options()
@@ -312,6 +335,36 @@ class AsymmetricView(QWidget):
             if current_curve in self.all_ecc_curves:
                 self.curve_combo.setCurrentText(current_curve)
 
+    def update_available_edwards_curves(self):
+        """根据当前选择的密钥格式更新可用的Edwards曲线"""
+        # 确保key_format_combo已经初始化
+        if self.key_format_combo is None:
+            return
+
+        current_format = self.key_format_combo.currentText().lower()
+        current_curve = self.edwards_curve_combo.currentText()
+
+        # 清空曲线选择框
+        self.edwards_curve_combo.clear()
+
+        if current_format == "openssh":
+            # 如果是OpenSSH格式, 只添加支持的Edwards曲线
+            self.edwards_curve_combo.addItems(self.openssh_supported_edwards)
+
+            # 如果之前选择的曲线在支持列表中, 则保持选择
+            if current_curve in self.openssh_supported_edwards:
+                self.edwards_curve_combo.setCurrentText(current_curve)
+            else:
+                # 否则默认选择第一个支持的曲线
+                self.edwards_curve_combo.setCurrentIndex(0)
+        else:
+            # 其他格式添加所有支持的Edwards曲线
+            self.edwards_curve_combo.addItems(self.edwards_curves)
+
+            # 尝试恢复之前的选择
+            if current_curve in self.edwards_curves:
+                self.edwards_curve_combo.setCurrentText(current_curve)
+
     def update_format_options(self):
         """根据当前选择的算法更新可用的格式选项"""
         if self.key_format_combo is None or self.algo_combo is None:
@@ -346,6 +399,10 @@ class AsymmetricView(QWidget):
 
         # 更新密码输入框状态
         self.update_password_field_state()
+
+        # 如果当前算法是Edwards，更新可用的Edwards曲线
+        if current_algorithm == "Edwards":
+            self.update_available_edwards_curves()
 
     def update_password_field_state(self):
         """根据当前格式更新密码输入框状态"""
@@ -384,6 +441,9 @@ class AsymmetricView(QWidget):
         # 如果当前算法是ECC, 需要更新可用的曲线
         if self.algo_combo.currentText() == "ECC":
             self.update_available_curves()
+        # 如果当前算法是Edwards, 需要更新可用的Edwards曲线
+        elif self.algo_combo.currentText() == "Edwards":
+            self.update_available_edwards_curves()
 
         # 更新密码输入框状态
         self.update_password_field_state()
@@ -420,6 +480,11 @@ class AsymmetricView(QWidget):
                 )
             elif algorithm == "ECC":
                 curve = self.curve_combo.currentText()
+                key_pair = AsymmetricCipherFactory.create_key_pair(
+                    algorithm, curve=curve, password=password_bytes
+                )
+            elif algorithm == "Edwards":
+                curve = self.edwards_curve_combo.currentText()
                 key_pair = AsymmetricCipherFactory.create_key_pair(
                     algorithm, curve=curve, password=password_bytes
                 )

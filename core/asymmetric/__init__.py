@@ -7,11 +7,13 @@ from .base import AsymmetricCipher, AsymmetricKey, KeyPair
 from .factory import AsymmetricCipherFactory
 from .rsa import RSA
 from .ecc import ECC
+from .edwards import Edwards
 from .elgamal import ElGamal
 
 # 注册算法
 AsymmetricCipherFactory.register_algorithm(RSA, set_default=True)  # 设置RSA为默认算法
 AsymmetricCipherFactory.register_algorithm(ECC)
+AsymmetricCipherFactory.register_algorithm(Edwards)
 AsymmetricCipherFactory.register_algorithm(ElGamal)
 
 __all__ = [
@@ -21,5 +23,6 @@ __all__ = [
     "AsymmetricCipherFactory",
     "RSA",
     "ECC",
+    "Edwards"
     "ElGamal",
 ]

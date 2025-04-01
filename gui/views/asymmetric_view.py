@@ -248,6 +248,7 @@ class AsymmetricView(QWidget):
         # 在所有UI组件初始化完成后, 再更新算法信息和参数
         self.update_algorithm_info()
         self.update_algorithm_params()
+        self.update_display_state()
 
     def update_algorithm_info(self):
         """更新算法信息"""
@@ -448,6 +449,47 @@ class AsymmetricView(QWidget):
         # 更新密码输入框状态
         self.update_password_field_state()
 
+        # 更新显示区域状态
+        self.update_display_state()
+
+    def update_display_state(self):
+        """根据当前选择的格式更新显示区域状态"""
+        if self.key_format_combo is None:
+            return
+
+        key_format = self.key_format_combo.currentText().lower()
+
+        if key_format == "der":
+            # DER格式是二进制的，禁用显示和复制功能
+            self.public_key_display.setEnabled(False)
+            self.private_key_display.setEnabled(False)
+            self.copy_public_btn.setEnabled(False)
+            self.copy_private_btn.setEnabled(False)
+
+            # 设置提示信息
+            self.public_key_display.setText(
+                "DER格式的二进制数据不适合显示, 请使用保存功能将密钥保存到文件。"
+            )
+            self.private_key_display.setText(
+                "DER格式的二进制数据不适合显示, 请使用保存功能将密钥保存到文件。"
+            )
+        else:
+            # 其他格式可以显示和复制
+            self.public_key_display.setEnabled(True)
+            self.private_key_display.setEnabled(True)
+
+            # 如果已经生成了密钥对，则启用复制按钮
+            if self.current_key_pair:
+                self.copy_public_btn.setEnabled(True)
+                self.copy_private_btn.setEnabled(True)
+
+            # 清空显示区域，等待生成新的密钥
+            if not self.current_key_pair:
+                self.public_key_display.setText("")
+                self.private_key_display.setText("")
+                self.public_key_display.setPlaceholderText("生成的公钥将显示在这里")
+                self.private_key_display.setPlaceholderText("生成的私钥将显示在这里")
+
     def generate_key_pair(self):
         """生成密钥对"""
         algorithm = self.algo_combo.currentText()
@@ -501,32 +543,64 @@ class AsymmetricView(QWidget):
             if key_format == "pem":
                 public_key_str = key_pair.public_key.to_pem().decode("utf-8")
                 private_key_str = key_pair.private_key.to_pem().decode("utf-8")
+
+                self.public_key_display.setText(public_key_str)
+                self.private_key_display.setText(private_key_str)
+
+                # 启用复制按钮
+                self.copy_public_btn.setEnabled(True)
+                self.copy_private_btn.setEnabled(True)
+
             elif key_format == "der":
-                public_key_str = (
-                    "DER格式的二进制数据 (已生成但不显示), 请保存到本地使用。"
+                # DER格式不显示内容，只提示用户保存
+                self.public_key_display.setText(
+                    "DER格式的二进制数据不适合显示, 请使用保存功能将密钥保存到文件。"
                 )
-                private_key_str = (
-                    "DER格式的二进制数据 (已生成但不显示), 请保存到本地使用。"
+                self.private_key_display.setText(
+                    "DER格式的二进制数据不适合显示, 请使用保存功能将密钥保存到文件。"
                 )
+
+                # 禁用复制按钮
+                self.copy_public_btn.setEnabled(False)
+                self.copy_private_btn.setEnabled(False)
+
             elif key_format == "openssh":
                 public_key_str = key_pair.public_key.to_openssh().decode("utf-8")
                 private_key_str = key_pair.private_key.to_openssh().decode("utf-8")
+
+                self.public_key_display.setText(public_key_str)
+                self.private_key_display.setText(private_key_str)
+
+                # 启用复制按钮
+                self.copy_public_btn.setEnabled(True)
+                self.copy_private_btn.setEnabled(True)
+
             elif key_format == "xml":
                 public_key_str = key_pair.public_key.to_xml()
                 private_key_str = key_pair.private_key.to_xml()
+
+                self.public_key_display.setText(public_key_str)
+                self.private_key_display.setText(private_key_str)
+
+                # 启用复制按钮
+                self.copy_public_btn.setEnabled(True)
+                self.copy_private_btn.setEnabled(True)
+
             else:
                 public_key_str = "未知格式"
                 private_key_str = "未知格式"
 
-            self.public_key_display.setText(public_key_str)
-            self.private_key_display.setText(private_key_str)
+                self.public_key_display.setText(public_key_str)
+                self.private_key_display.setText(private_key_str)
 
-            # 启用保存和复制按钮
+                # 禁用复制按钮
+                self.copy_public_btn.setEnabled(False)
+                self.copy_private_btn.setEnabled(False)
+
+            # 启用保存按钮
             self.save_private_btn.setEnabled(True)
             self.save_public_btn.setEnabled(True)
             self.save_both_btn.setEnabled(True)
-            self.copy_public_btn.setEnabled(True)
-            self.copy_private_btn.setEnabled(True)
 
             QMessageBox.information(self, "成功", f"成功生成{algorithm}密钥对")
 

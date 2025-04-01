@@ -1,7 +1,9 @@
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
-from typing import Dict, Optional, Tuple, Union, Any
+from typing import Dict, Optional, Union, Any
+import xml.etree.ElementTree as ET
+import base64
 
 from .base import SignatureBase
 
@@ -32,6 +34,9 @@ class ECDSASignature(SignatureBase):
         "BRAINPOOLP512R1": ec.BrainpoolP512R1(),
     }
     DEFAULT_CURVE = "SECP256R1"
+
+    # OpenSSH格式支持的ECC曲线列表
+    OPENSSH_SUPPORTED_CURVES = ["SECP256R1", "SECP384R1", "SECP521R1"]
 
     # 支持的哈希算法
     SUPPORTED_HASH_ALGORITHMS = {
@@ -127,6 +132,7 @@ class ECDSASignature(SignatureBase):
         return {
             "注意": "ECDSA密钥长度由曲线决定, 请使用set_curve方法设置曲线",
             "支持的曲线": list(self.SUPPORTED_CURVES.keys()),
+            "OpenSSH支持的曲线": self.OPENSSH_SUPPORTED_CURVES,
         }
 
     def get_supported_hash_algorithms(self) -> Dict[str, Any]:
@@ -137,46 +143,23 @@ class ECDSASignature(SignatureBase):
         """
         return self.SUPPORTED_HASH_ALGORITHMS.copy()
 
-    def generate_key_pair(self, **kwargs) -> Tuple:
-        """生成 ECDSA 密钥对
-
-        Args:
-            **kwargs: 其他参数, 可以包含'curve'来指定曲线
-
-        Returns:
-            Tuple: (私钥, 公钥)
-        """
-        # 检查是否提供了curve参数
-        if "curve" in kwargs:
-            curve = kwargs["curve"]
-            if isinstance(curve, str):
-                curve_name = curve.upper()
-                if curve_name in self.SUPPORTED_CURVES:
-                    curve = self.SUPPORTED_CURVES[curve_name]
-                else:
-                    raise ValueError(f"不支持的椭圆曲线: {curve}")
-        else:
-            curve = self.curve
-
-        private_key = ec.generate_private_key(curve)
-        public_key = private_key.public_key()
-        return private_key, public_key
-
     def sign(
         self,
         data: Union[bytes, str],
         private_key,
         password: Optional[bytes] = None,
         hash_algorithm: Any = None,
+        key_format: str = "Auto",
         **kwargs,
     ) -> bytes:
         """使用 ECDSA 私钥对数据进行签名
 
         Args:
             data: 要签名的数据
-            private_key: ECDSA 私钥或私钥字节数据
-            password: 私钥密码 (如果私钥是字节数据且已加密)
+            private_key: ECDSA 私钥对象或私钥数据
+            password: 私钥密码 (如果私钥已加密)
             hash_algorithm: 可选的哈希算法, 覆盖实例默认值
+            key_format: 密钥格式, 可选 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             bytes: 签名结果
@@ -195,11 +178,9 @@ class ECDSASignature(SignatureBase):
             else:
                 hash_alg = hash_algorithm
 
-        # 如果 private_key 是字节数据, 则加载它
-        if isinstance(private_key, bytes):
-            private_key = serialization.load_pem_private_key(
-                private_key, password=password
-            )
+        # 如果 private_key 不是密钥对象, 则加载它
+        if not hasattr(private_key, "sign"):
+            private_key = self._load_private_key(private_key, password, key_format)
 
         signature = private_key.sign(data, ec.ECDSA(hash_alg))
         return signature
@@ -210,6 +191,7 @@ class ECDSASignature(SignatureBase):
         signature: bytes,
         public_key,
         hash_algorithm: Any = None,
+        key_format: str = "Auto",
         **kwargs,
     ) -> bool:
         """使用 ECDSA 公钥验证签名
@@ -217,8 +199,9 @@ class ECDSASignature(SignatureBase):
         Args:
             data: 原始数据
             signature: 签名
-            public_key: ECDSA 公钥或公钥字节数据
+            public_key: ECDSA 公钥对象或公钥数据
             hash_algorithm: 可选的哈希算法, 覆盖实例默认值
+            key_format: 密钥格式, 可选 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             bool: 验证是否通过
@@ -237,9 +220,9 @@ class ECDSASignature(SignatureBase):
             else:
                 hash_alg = hash_algorithm
 
-        # 如果 public_key 是字节数据, 则加载它
-        if isinstance(public_key, bytes):
-            public_key = serialization.load_pem_public_key(public_key)
+        # 如果 public_key 不是密钥对象, 则加载它
+        if not hasattr(public_key, "verify"):
+            public_key = self._load_public_key(public_key, key_format)
 
         try:
             public_key.verify(signature, data, ec.ECDSA(hash_alg))
@@ -247,38 +230,260 @@ class ECDSASignature(SignatureBase):
         except InvalidSignature:
             return False
 
-    def load_private_key(self, path: str, password: Optional[bytes] = None):
+    def load_private_key(
+        self, path: str, password: Optional[bytes] = None, format: str = "Auto"
+    ):
         """从文件加载 ECDSA 私钥
 
         Args:
             path: 私钥文件路径
             password: 私钥密码, 如果有加密
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             ECDSA 私钥对象
         """
         with open(path, "rb") as f:
-            private_bytes = f.read()
+            key_data = f.read()
 
-        private_key = serialization.load_pem_private_key(
-            private_bytes, password=password
-        )
-        return private_key
+        return self._load_private_key(key_data, password, format)
 
-    def load_public_key(self, path: str, **kwargs):
+    def load_public_key(self, path: str, format: str = "Auto"):
         """从文件加载 ECDSA 公钥
 
         Args:
             path: 公钥文件路径
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             ECDSA 公钥对象
         """
         with open(path, "rb") as f:
-            public_bytes = f.read()
+            key_data = f.read()
 
-        public_key = serialization.load_pem_public_key(public_bytes)
-        return public_key
+        return self._load_public_key(key_data, format)
+
+    def _load_private_key(
+        self, key_data, password: Optional[bytes] = None, format: str = "Auto"
+    ):
+        """内部方法：加载 ECDSA 私钥
+
+        Args:
+            key_data: 私钥数据
+            password: 私钥密码, 如果有加密
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
+
+        Returns:
+            ECDSA 私钥对象
+        """
+        # 如果已经是私钥对象，直接返回
+        if hasattr(key_data, "sign"):
+            return key_data
+
+        # 如果是字符串，检查是否是XML格式
+        if isinstance(key_data, str):
+            if format == "Auto" and key_data.strip().startswith("<"):
+                return self._load_private_key_from_xml(key_data)
+            elif format == "XML":
+                return self._load_private_key_from_xml(key_data)
+            else:
+                key_data = key_data.encode()
+
+        # 自动检测格式
+        if format == "Auto":
+            try:
+                return serialization.load_pem_private_key(key_data, password=password)
+            except ValueError:
+                try:
+                    return serialization.load_der_private_key(
+                        key_data, password=password
+                    )
+                except ValueError:
+                    try:
+                        return serialization.load_ssh_private_key(
+                            key_data, password=password
+                        )
+                    except ValueError:
+                        try:
+                            return self._load_private_key_from_xml(
+                                key_data.decode("utf-8", errors="ignore")
+                            )
+                        except:
+                            raise ValueError("无法自动识别私钥格式")
+        elif format == "PEM":
+            return serialization.load_pem_private_key(key_data, password=password)
+        elif format == "DER":
+            return serialization.load_der_private_key(key_data, password=password)
+        elif format == "OpenSSH":
+            # 加载密钥
+            key = serialization.load_ssh_private_key(key_data, password=password)
+
+            # 检查是否是ECDSA密钥并验证曲线类型
+            if isinstance(key.curve, ec.EllipticCurve):
+                curve_name = None
+                # 从密钥中获取曲线名称
+                for name, curve_obj in self.SUPPORTED_CURVES.items():
+                    if isinstance(key.curve, type(curve_obj)):
+                        curve_name = name
+                        break
+
+                # 验证曲线是否在OpenSSH支持列表中
+                if curve_name and curve_name not in self.OPENSSH_SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"OpenSSH格式不支持{curve_name}曲线的ECDSA密钥, 仅支持: {', '.join(self.OPENSSH_SUPPORTED_CURVES)}"
+                    )
+
+            return key
+        elif format == "XML":
+            if isinstance(key_data, bytes):
+                key_data = key_data.decode("utf-8", errors="ignore")
+            return self._load_private_key_from_xml(key_data)
+        else:
+            raise ValueError(f"不支持的密钥格式: {format}")
+
+    def _load_public_key(self, key_data, format: str = "Auto"):
+        """内部方法：加载 ECDSA 公钥
+
+        Args:
+            key_data: 公钥数据
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
+
+        Returns:
+            ECDSA 公钥对象
+        """
+        # 如果已经是公钥对象，直接返回
+        if hasattr(key_data, "verify"):
+            return key_data
+
+        # 如果是字符串，检查是否是XML格式
+        if isinstance(key_data, str):
+            if format == "Auto" and key_data.strip().startswith("<"):
+                return self._load_public_key_from_xml(key_data)
+            elif format == "XML":
+                return self._load_public_key_from_xml(key_data)
+            else:
+                key_data = key_data.encode()
+
+        # 自动检测格式
+        if format == "Auto":
+            try:
+                return serialization.load_pem_public_key(key_data)
+            except ValueError:
+                try:
+                    return serialization.load_der_public_key(key_data)
+                except ValueError:
+                    try:
+                        return serialization.load_ssh_public_key(key_data)
+                    except ValueError:
+                        try:
+                            return self._load_public_key_from_xml(
+                                key_data.decode("utf-8", errors="ignore")
+                            )
+                        except:
+                            raise ValueError("无法自动识别公钥格式")
+        elif format == "PEM":
+            return serialization.load_pem_public_key(key_data)
+        elif format == "DER":
+            return serialization.load_der_public_key(key_data)
+        elif format == "OpenSSH":
+            # 加载密钥
+            key = serialization.load_ssh_public_key(key_data)
+
+            # 检查是否是ECDSA密钥并验证曲线类型
+            if isinstance(key.curve, ec.EllipticCurve):
+                curve_name = None
+                # 从密钥中获取曲线名称
+                for name, curve_obj in self.SUPPORTED_CURVES.items():
+                    if isinstance(key.curve, type(curve_obj)):
+                        curve_name = name
+                        break
+
+                # 验证曲线是否在OpenSSH支持列表中
+                if curve_name and curve_name not in self.OPENSSH_SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"OpenSSH格式不支持{curve_name}曲线的ECDSA密钥, 仅支持: {', '.join(self.OPENSSH_SUPPORTED_CURVES)}"
+                    )
+
+            return key
+        elif format == "XML":
+            if isinstance(key_data, bytes):
+                key_data = key_data.decode("utf-8", errors="ignore")
+            return self._load_public_key_from_xml(key_data)
+        else:
+            raise ValueError(f"不支持的密钥格式: {format}")
+
+    def _load_private_key_from_xml(self, xml_data):
+        """从XML加载ECDSA私钥
+
+        Args:
+            xml_data: XML格式的私钥数据
+
+        Returns:
+            ECDSA私钥对象
+        """
+        try:
+            # 解析XML
+            root = ET.fromstring(xml_data)
+
+            # 获取曲线名称
+            curve_name = root.find("Curve").text.upper()
+            if curve_name not in self.SUPPORTED_CURVES:
+                raise ValueError(f"不支持的椭圆曲线: {curve_name}")
+
+            # 获取私钥值
+            d_b64 = root.find("D").text
+            d = int.from_bytes(base64.b64decode(d_b64), byteorder="big")
+
+            # 获取公钥点坐标
+            x_b64 = root.find("X").text
+            y_b64 = root.find("Y").text
+            x = int.from_bytes(base64.b64decode(x_b64), byteorder="big")
+            y = int.from_bytes(base64.b64decode(y_b64), byteorder="big")
+
+            # 创建公钥和私钥数字
+            curve = self.SUPPORTED_CURVES[curve_name]
+            public_numbers = ec.EllipticCurvePublicNumbers(x=x, y=y, curve=curve)
+            private_numbers = ec.EllipticCurvePrivateNumbers(
+                private_value=d, public_numbers=public_numbers
+            )
+
+            # 生成私钥对象
+            return private_numbers.private_key()
+        except Exception as e:
+            raise ValueError(f"无法从XML加载ECDSA私钥: {str(e)}")
+
+    def _load_public_key_from_xml(self, xml_data):
+        """从XML加载ECDSA公钥
+
+        Args:
+            xml_data: XML格式的公钥数据
+
+        Returns:
+            ECDSA公钥对象
+        """
+        try:
+            # 解析XML
+            root = ET.fromstring(xml_data)
+
+            # 获取曲线名称
+            curve_name = root.find("Curve").text.upper()
+            if curve_name not in self.SUPPORTED_CURVES:
+                raise ValueError(f"不支持的椭圆曲线: {curve_name}")
+
+            # 获取公钥点坐标
+            x_b64 = root.find("X").text
+            y_b64 = root.find("Y").text
+            x = int.from_bytes(base64.b64decode(x_b64), byteorder="big")
+            y = int.from_bytes(base64.b64decode(y_b64), byteorder="big")
+
+            # 创建公钥数字
+            curve = self.SUPPORTED_CURVES[curve_name]
+            public_numbers = ec.EllipticCurvePublicNumbers(x=x, y=y, curve=curve)
+
+            # 生成公钥对象
+            return public_numbers.public_key()
+        except Exception as e:
+            raise ValueError(f"无法从XML加载ECDSA公钥: {str(e)}")
 
     def _ensure_bytes(self, data: Union[bytes, str]) -> bytes:
         """确保数据为字节类型

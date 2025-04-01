@@ -1,22 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Union
 
 
 class SignatureBase(ABC):
     """数字签名基类, 定义所有签名算法的通用接口"""
-
-    @abstractmethod
-    def generate_key_pair(self, key_size: Optional[int] = None, **kwargs) -> Tuple:
-        """生成密钥对
-
-        Args:
-            key_size: 密钥长度(位), 如果为None则使用算法默认值
-            **kwargs: 其他算法特定参数
-
-        Returns:
-            Tuple: (私钥, 公钥)
-        """
-        pass
 
     @abstractmethod
     def sign(self, data: Union[bytes, str], private_key, **kwargs) -> bytes:

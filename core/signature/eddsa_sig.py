@@ -1,6 +1,8 @@
 from Crypto.PublicKey import ECC
 from Crypto.Signature import eddsa
-from typing import Dict, Optional, Tuple, Union, Any
+from typing import Dict, Optional, Union, Any
+import base64
+import xml.etree.ElementTree as ET
 
 from .base import SignatureBase
 
@@ -11,6 +13,9 @@ class EdDSASignature(SignatureBase):
     # 支持的曲线
     SUPPORTED_CURVES = {"Ed25519", "Ed448"}
     DEFAULT_CURVE = "Ed25519"
+
+    # OpenSSH格式支持的Edwards曲线
+    OPENSSH_SUPPORTED_CURVES = ["Ed25519"]
 
     def __init__(self, curve: str = "Ed25519"):
         """初始化 EdDSA 签名类
@@ -72,6 +77,7 @@ class EdDSASignature(SignatureBase):
             "Ed25519": 256,  # 实际密钥长度为32字节(256位)
             "Ed448": 448,  # 实际密钥长度为57字节(456位)
             "支持的曲线": list(self.SUPPORTED_CURVES),
+            "OpenSSH支持的曲线": self.OPENSSH_SUPPORTED_CURVES,
         }
 
     def get_supported_hash_algorithms(self) -> Dict[str, Any]:
@@ -86,40 +92,21 @@ class EdDSASignature(SignatureBase):
             "Ed448": "SHAKE256",
         }
 
-    def generate_key_pair(self, key_size: Optional[int] = None, **kwargs) -> Tuple:
-        """生成 EdDSA 密钥对
-
-        Args:
-            key_size: 密钥长度(位), 对于EdDSA此参数被忽略, 密钥长度由曲线决定
-            **kwargs: 其他参数, 可以包含'curve'来指定曲线
-
-        Returns:
-            Tuple: (私钥, 公钥)
-        """
-        # 检查是否提供了curve参数
-        if "curve" in kwargs:
-            curve = kwargs["curve"]
-            if curve not in self.SUPPORTED_CURVES:
-                raise ValueError(f"曲线类型必须是 {' 或 '.join(self.SUPPORTED_CURVES)}")
-        else:
-            curve = self.curve
-
-        key = ECC.generate(curve=curve)
-        return key, key.public_key()
-
     def sign(
         self,
         data: Union[bytes, str],
         private_key,
         password: Optional[bytes] = None,
+        key_format: str = "Auto",
         **kwargs,
     ) -> bytes:
         """使用 EdDSA 私钥对数据进行签名
 
         Args:
             data: 要签名的数据
-            private_key: EdDSA 私钥对象或 PEM 格式的私钥字节数据
-            password: 私钥密码 (如果私钥是 PEM 格式且已加密)
+            private_key: EdDSA 私钥对象或私钥数据
+            password: 私钥密码 (如果私钥已加密)
+            key_format: 密钥格式, 可选 "Auto", "PEM", "DER", "OpenSSH", "XML"
             **kwargs: 其他参数, 可以包含'context'来指定上下文
 
         Returns:
@@ -134,9 +121,11 @@ class EdDSASignature(SignatureBase):
         if len(context) > 255:
             raise ValueError("上下文数据不能超过 255 字节")
 
-        # 如果 private_key 是字节数据, 则加载它
-        if isinstance(private_key, bytes):
-            private_key = ECC.import_key(private_key, passphrase=password)
+        # 如果 private_key 不是密钥对象, 则加载它
+        if not hasattr(
+            private_key, "pointQ"
+        ):  # PyCryptodome的EdDSA密钥对象有pointQ属性
+            private_key = self._load_private_key(private_key, password, key_format)
 
         # 创建签名对象并签名
         signer = eddsa.new(private_key, mode="rfc8032", context=context)
@@ -144,14 +133,20 @@ class EdDSASignature(SignatureBase):
         return signature
 
     def verify(
-        self, data: Union[bytes, str], signature: bytes, public_key, **kwargs
+        self,
+        data: Union[bytes, str],
+        signature: bytes,
+        public_key,
+        key_format: str = "Auto",
+        **kwargs,
     ) -> bool:
         """使用 EdDSA 公钥验证签名
 
         Args:
             data: 原始数据
             signature: 签名
-            public_key: EdDSA 公钥对象或 PEM 格式的公钥字节数据
+            public_key: EdDSA 公钥对象或公钥数据
+            key_format: 密钥格式, 可选 "Auto", "PEM", "DER", "OpenSSH", "XML"
             **kwargs: 其他参数, 可以包含'context'来指定上下文
 
         Returns:
@@ -166,9 +161,9 @@ class EdDSASignature(SignatureBase):
         if len(context) > 255:
             raise ValueError("上下文数据不能超过 255 字节")
 
-        # 如果 public_key 是字节数据, 则加载它
-        if isinstance(public_key, bytes):
-            public_key = ECC.import_key(public_key)
+        # 如果 public_key 不是密钥对象, 则加载它
+        if not hasattr(public_key, "pointQ"):  # PyCryptodome的EdDSA密钥对象有pointQ属性
+            public_key = self._load_public_key(public_key, key_format)
 
         # 创建验证对象并验证
         verifier = eddsa.new(public_key, mode="rfc8032", context=context)
@@ -178,92 +173,311 @@ class EdDSASignature(SignatureBase):
         except ValueError:
             return False
 
-    def load_private_key(self, path: str, password: Optional[bytes] = None):
+    def load_private_key(
+        self, path: str, password: Optional[bytes] = None, format: str = "Auto"
+    ):
         """从文件加载 EdDSA 私钥
 
         Args:
             path: 私钥文件路径
             password: 私钥密码, 如果有加密
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             EdDSA 私钥对象
         """
         with open(path, "rb") as f:
-            private_bytes = f.read()
+            key_data = f.read()
 
-        private_key = ECC.import_key(private_bytes, passphrase=password)
+        return self._load_private_key(key_data, password, format)
 
-        # 验证曲线类型
-        if private_key.curve != self.curve:
-            raise ValueError(
-                f"导入的密钥曲线类型 {private_key.curve} 与当前设置的 {self.curve} 不匹配"
-            )
-
-        return private_key
-
-    def load_public_key(self, path: str, **kwargs):
+    def load_public_key(self, path: str, format: str = "Auto"):
         """从文件加载 EdDSA 公钥
 
         Args:
             path: 公钥文件路径
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             EdDSA 公钥对象
         """
         with open(path, "rb") as f:
-            public_bytes = f.read()
+            key_data = f.read()
 
-        public_key = ECC.import_key(public_bytes)
+        return self._load_public_key(key_data, format)
 
-        # 验证曲线类型
-        if public_key.curve != self.curve:
-            raise ValueError(
-                f"导入的密钥曲线类型 {public_key.curve} 与当前设置的 {self.curve} 不匹配"
-            )
-
-        return public_key
-
-    def import_private_key_raw(self, key_data: bytes):
-        """从原始字节导入私钥 (RFC8032)
+    def _load_private_key(
+        self, key_data, password: Optional[bytes] = None, format: str = "Auto"
+    ):
+        """内部方法：加载 EdDSA 私钥
 
         Args:
-            key_data: 私钥的原始字节
-                      Ed25519 为 32 字节
-                      Ed448 为 57 字节
+            key_data: 私钥数据
+            password: 私钥密码, 如果有加密
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             EdDSA 私钥对象
         """
-        private_key = eddsa.import_private_key(key_data)
+        # 如果已经是私钥对象，直接返回
+        if hasattr(key_data, "pointQ"):
+            return key_data
 
-        # 验证曲线类型
-        if private_key.curve != self.curve:
-            raise ValueError(
-                f"导入的密钥曲线类型 {private_key.curve} 与当前设置的 {self.curve} 不匹配"
-            )
+        # 如果是字符串，检查是否是XML格式
+        if isinstance(key_data, str):
+            if format == "Auto" and key_data.strip().startswith("<"):
+                return self._load_private_key_from_xml(key_data)
+            elif format == "XML":
+                return self._load_private_key_from_xml(key_data)
+            else:
+                key_data = key_data.encode()
 
-        return private_key
+        # 自动检测格式
+        if format == "Auto":
+            # 先尝试作为PEM/DER/SSH格式加载
+            try:
+                key = ECC.import_key(key_data, passphrase=password)
+                # 验证曲线类型
+                if key.curve not in self.SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"导入的密钥曲线类型 {key.curve} 与支持的类型不匹配"
+                    )
+                return key
+            except (ValueError, TypeError):
+                # 如果失败，尝试作为XML格式加载
+                try:
+                    if isinstance(key_data, bytes):
+                        xml_data = key_data.decode("utf-8", errors="ignore")
+                    else:
+                        xml_data = key_data
+                    return self._load_private_key_from_xml(xml_data)
+                except Exception:
+                    raise ValueError("无法自动识别私钥格式")
+        elif format in ("PEM", "DER"):
+            key = ECC.import_key(key_data, passphrase=password)
+            # 验证曲线类型
+            if key.curve not in self.SUPPORTED_CURVES:
+                raise ValueError(f"导入的密钥曲线类型 {key.curve} 与支持的类型不匹配")
+            return key
+        elif format == "OpenSSH":
+            # 尝试加载OpenSSH格式的密钥
+            try:
+                key = ECC.import_key(key_data, passphrase=password)
+                # 验证曲线类型
+                if key.curve not in self.SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"导入的密钥曲线类型 {key.curve} 与支持的类型不匹配"
+                    )
 
-    def import_public_key_raw(self, key_data: bytes):
-        """从原始字节导入公钥 (RFC8032)
+                # 验证曲线是否在OpenSSH支持列表中
+                if key.curve not in self.OPENSSH_SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"OpenSSH格式不支持{key.curve}曲线的EdDSA密钥, 仅支持: {', '.join(self.OPENSSH_SUPPORTED_CURVES)}"
+                    )
+
+                return key
+            except Exception as e:
+                raise ValueError(f"无法加载OpenSSH格式的EdDSA私钥: {str(e)}")
+        elif format == "XML":
+            if isinstance(key_data, bytes):
+                key_data = key_data.decode("utf-8", errors="ignore")
+            return self._load_private_key_from_xml(key_data)
+        else:
+            raise ValueError(f"不支持的密钥格式: {format}")
+
+    def _load_public_key(self, key_data, format: str = "Auto"):
+        """内部方法：加载 EdDSA 公钥
 
         Args:
-            key_data: 公钥的原始字节
-                      Ed25519 为 32 字节
-                      Ed448 为 57 字节
+            key_data: 公钥数据
+            format: 密钥格式, 支持 "Auto", "PEM", "DER", "OpenSSH", "XML"
 
         Returns:
             EdDSA 公钥对象
         """
-        public_key = eddsa.import_public_key(key_data)
+        # 如果已经是公钥对象，直接返回
+        if hasattr(key_data, "pointQ"):
+            return key_data
 
-        # 验证曲线类型
-        if public_key.curve != self.curve:
-            raise ValueError(
-                f"导入的密钥曲线类型 {public_key.curve} 与当前设置的 {self.curve} 不匹配"
-            )
+        # 如果是字符串，检查是否是XML格式
+        if isinstance(key_data, str):
+            if format == "Auto" and key_data.strip().startswith("<"):
+                return self._load_public_key_from_xml(key_data)
+            elif format == "XML":
+                return self._load_public_key_from_xml(key_data)
+            else:
+                key_data = key_data.encode()
 
-        return public_key
+        # 自动检测格式
+        if format == "Auto":
+            # 先尝试作为PEM/DER/SSH格式加载
+            try:
+                key = ECC.import_key(key_data)
+                # 验证曲线类型
+                if key.curve not in self.SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"导入的密钥曲线类型 {key.curve} 与支持的类型不匹配"
+                    )
+                return key
+            except (ValueError, TypeError):
+                # 如果失败，尝试作为XML格式加载
+                try:
+                    if isinstance(key_data, bytes):
+                        xml_data = key_data.decode("utf-8", errors="ignore")
+                    else:
+                        xml_data = key_data
+                    return self._load_public_key_from_xml(xml_data)
+                except Exception:
+                    raise ValueError("无法自动识别公钥格式")
+        elif format in ("PEM", "DER"):
+            key = ECC.import_key(key_data)
+            # 验证曲线类型
+            if key.curve not in self.SUPPORTED_CURVES:
+                raise ValueError(f"导入的密钥曲线类型 {key.curve} 与支持的类型不匹配")
+            return key
+        elif format == "OpenSSH":
+            # 尝试加载OpenSSH格式的密钥
+            try:
+                key = ECC.import_key(key_data)
+                # 验证曲线类型
+                if key.curve not in self.SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"导入的密钥曲线类型 {key.curve} 与支持的类型不匹配"
+                    )
+
+                # 验证曲线是否在OpenSSH支持列表中
+                if key.curve not in self.OPENSSH_SUPPORTED_CURVES:
+                    raise ValueError(
+                        f"OpenSSH格式不支持{key.curve}曲线的EdDSA密钥, 仅支持: {', '.join(self.OPENSSH_SUPPORTED_CURVES)}"
+                    )
+
+                return key
+            except Exception as e:
+                raise ValueError(f"无法加载OpenSSH格式的EdDSA公钥: {str(e)}")
+        elif format == "XML":
+            if isinstance(key_data, bytes):
+                key_data = key_data.decode("utf-8", errors="ignore")
+            return self._load_public_key_from_xml(key_data)
+        else:
+            raise ValueError(f"不支持的密钥格式: {format}")
+
+    def _load_private_key_from_xml(self, xml_data: str):
+        """从XML加载EdDSA私钥
+
+        Args:
+            xml_data: XML格式的私钥数据
+
+        Returns:
+            EdDSA 私钥对象
+        """
+        try:
+            # 解析XML
+            root = ET.fromstring(xml_data)
+
+            # 获取曲线类型
+            curve_elem = root.find("Curve")
+            if curve_elem is None:
+                raise ValueError("XML中未找到Curve元素")
+
+            curve = curve_elem.text
+            if curve not in self.SUPPORTED_CURVES:
+                raise ValueError(f"不支持的曲线类型: {curve}")
+
+            # 首先尝试使用 edwards.py 中使用的标签 "PrivateKey"
+            private_elem = root.find("PrivateKey")
+            if private_elem is not None and private_elem.text:
+                seed_b64 = private_elem.text
+            else:
+                # 如果找不到 "PrivateKey" 标签，则尝试使用 "Seed" 标签
+                seed_elem = root.find("Seed")
+                if seed_elem is None:
+                    raise ValueError("XML中未找到PrivateKey或Seed元素")
+
+                seed_b64 = seed_elem.text
+                if not seed_b64:
+                    raise ValueError("私钥元素内容为空")
+
+            seed = base64.b64decode(seed_b64)
+
+            # 验证密钥长度
+            expected_length = 32 if curve == "Ed25519" else 57
+            if len(seed) != expected_length:
+                raise ValueError(
+                    f"{curve}私钥种子长度应为{expected_length}字节，但得到{len(seed)}字节"
+                )
+
+            # 使用PyCryptodome导入私钥
+            try:
+                private_key = eddsa.import_private_key(seed)
+                if private_key.curve != curve:
+                    raise ValueError(
+                        f"导入的密钥曲线类型 {private_key.curve} 与XML中指定的 {curve} 不匹配"
+                    )
+                return private_key
+            except Exception as e:
+                raise ValueError(f"无法导入EdDSA私钥: {str(e)}")
+
+        except Exception as e:
+            raise ValueError(f"无法从XML加载EdDSA私钥: {str(e)}")
+
+    def _load_public_key_from_xml(self, xml_data: str):
+        """从XML加载EdDSA公钥
+
+        Args:
+            xml_data: XML格式的公钥数据
+
+        Returns:
+            EdDSA 公钥对象
+        """
+        try:
+            # 解析XML
+            root = ET.fromstring(xml_data)
+
+            # 获取曲线类型
+            curve_elem = root.find("Curve")
+            if curve_elem is None:
+                raise ValueError("XML中未找到Curve元素")
+
+            curve = curve_elem.text
+            if curve not in self.SUPPORTED_CURVES:
+                raise ValueError(f"不支持的曲线类型: {curve}")
+
+            # 首先尝试使用 edwards.py 中使用的标签 "PublicKey"
+            public_elem = root.find("PublicKey")
+            if public_elem is not None and public_elem.text:
+                point_b64 = public_elem.text
+            else:
+                # 如果找不到 "PublicKey" 标签，则尝试使用 "Point" 标签
+                point_elem = root.find("Point")
+                if point_elem is None:
+                    raise ValueError("XML中未找到PublicKey或Point元素")
+
+                point_b64 = point_elem.text
+                if not point_b64:
+                    raise ValueError("公钥元素内容为空")
+
+            point = base64.b64decode(point_b64)
+
+            # 验证密钥长度
+            expected_length = 32 if curve == "Ed25519" else 57
+            if len(point) != expected_length:
+                raise ValueError(
+                    f"{curve}公钥点长度应为{expected_length}字节，但得到{len(point)}字节"
+                )
+
+            # 使用PyCryptodome导入公钥
+            try:
+                public_key = eddsa.import_public_key(point)
+                if public_key.curve != curve:
+                    raise ValueError(
+                        f"导入的密钥曲线类型 {public_key.curve} 与XML中指定的 {curve} 不匹配"
+                    )
+                return public_key
+            except Exception as e:
+                raise ValueError(f"无法导入EdDSA公钥: {str(e)}")
+
+        except Exception as e:
+            raise ValueError(f"无法从XML加载EdDSA公钥: {str(e)}")
 
     def _ensure_bytes(self, data: Union[bytes, str]) -> bytes:
         """确保数据为字节类型

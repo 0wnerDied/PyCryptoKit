@@ -133,7 +133,6 @@ __all__ = [
     "verify_signature",
     "list_algorithms",
     "get_algorithm_info",
-    "generate_key_pair",
     "ALL_ALGORITHMS",
     # 对称加密
     "SymmetricAlgorithm",

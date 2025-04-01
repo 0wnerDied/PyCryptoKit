@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QMessageBox,
     QScrollArea,
-    QFormLayout,
     QSpinBox,
     QGridLayout,
 )
@@ -214,7 +213,7 @@ class SignatureView(QWidget):
         key_text_layout.setContentsMargins(0, 0, 0, 0)
 
         self.key_input = QTextEdit()
-        self.key_input.setPlaceholderText("在此输入PEM格式的私钥")
+        self.key_input.setPlaceholderText("在此输入私钥")
         key_text_layout.addWidget(self.key_input)
 
         key_layout.addWidget(self.key_text_widget)
@@ -241,6 +240,22 @@ class SignatureView(QWidget):
 
         # 初始状态
         self.key_file_widget.hide()
+
+        # 添加密钥格式选择
+        format_layout = QHBoxLayout()
+        format_layout.addWidget(QLabel("密钥格式:"))
+        self.key_format_combo = QComboBox()
+        self.key_format_combo.addItems(["Auto", "PEM", "DER", "OpenSSH", "XML"])
+        self.key_format_combo.setCurrentText("Auto")
+        format_layout.addWidget(self.key_format_combo)
+
+        # 添加OpenSSH格式说明按钮
+        self.openssh_info_btn = QPushButton("?")
+        self.openssh_info_btn.setFixedSize(20, 20)
+        self.openssh_info_btn.clicked.connect(self.show_openssh_format_info)
+        format_layout.addWidget(self.openssh_info_btn)
+
+        key_layout.addLayout(format_layout)
 
         # 密钥密码
         password_layout = QHBoxLayout()
@@ -527,7 +542,7 @@ class SignatureView(QWidget):
         key_text_layout.setContentsMargins(0, 0, 0, 0)
 
         self.verify_key_input = QTextEdit()
-        self.verify_key_input.setPlaceholderText("在此输入PEM格式的公钥")
+        self.verify_key_input.setPlaceholderText("在此输入公钥")
         key_text_layout.addWidget(self.verify_key_input)
 
         key_layout.addWidget(self.verify_key_text_widget)
@@ -554,6 +569,22 @@ class SignatureView(QWidget):
 
         # 初始状态
         self.verify_key_file_widget.hide()
+
+        # 添加密钥格式选择
+        format_layout = QHBoxLayout()
+        format_layout.addWidget(QLabel("密钥格式:"))
+        self.verify_key_format_combo = QComboBox()
+        self.verify_key_format_combo.addItems(["Auto", "PEM", "DER", "OpenSSH", "XML"])
+        self.verify_key_format_combo.setCurrentText("Auto")
+        format_layout.addWidget(self.verify_key_format_combo)
+
+        # 添加OpenSSH格式说明按钮
+        self.verify_openssh_info_btn = QPushButton("?")
+        self.verify_openssh_info_btn.setFixedSize(20, 20)
+        self.verify_openssh_info_btn.clicked.connect(self.show_openssh_format_info)
+        format_layout.addWidget(self.verify_openssh_info_btn)
+
+        key_layout.addLayout(format_layout)
 
         key_group.setLayout(key_layout)
         layout.addWidget(key_group)
@@ -711,6 +742,20 @@ class SignatureView(QWidget):
         result_layout.addWidget(self.verify_result)
         result_group.setLayout(result_layout)
         layout.addWidget(result_group)
+
+    def show_openssh_format_info(self):
+        """显示OpenSSH格式支持信息"""
+        info_text = (
+            "OpenSSH格式支持的曲线类型:\n\n"
+            "ECDSA算法:\n"
+            "- SECP256R1 (nistp256)\n"
+            "- SECP384R1 (nistp384)\n"
+            "- SECP521R1 (nistp521)\n\n"
+            "EdDSA算法:\n"
+            "- Ed25519\n\n"
+            "注意: 其他曲线类型在OpenSSH格式下不受支持。"
+        )
+        QMessageBox.information(self, "OpenSSH格式支持信息", info_text)
 
     def update_sign_algorithm_info(self):
         """更新签名算法信息"""
@@ -1115,6 +1160,18 @@ class SignatureView(QWidget):
         algorithm = self.sign_algo_combo.currentText()
         params = {}
 
+        # 添加密钥格式参数
+        key_format = self.key_format_combo.currentText()
+        if key_format != "Auto":
+            if key_format == "PEM":
+                params["key_format"] = "PEM"
+            elif key_format == "DER":
+                params["key_format"] = "DER"
+            elif key_format == "OpenSSH":
+                params["key_format"] = "OpenSSH"
+            elif key_format == "XML":
+                params["key_format"] = "XML"
+
         # 根据算法获取相应参数
         if algorithm == "RSA_PKCS1v15":
             params["hash_algorithm"] = self.sign_hash_algo_combo.currentText()
@@ -1138,6 +1195,18 @@ class SignatureView(QWidget):
         """获取验证算法参数"""
         algorithm = self.verify_algo_combo.currentText()
         params = {}
+
+        # 添加密钥格式参数
+        key_format = self.verify_key_format_combo.currentText()
+        if key_format != "Auto":
+            if key_format == "PEM":
+                params["key_format"] = "PEM"
+            elif key_format == "DER":
+                params["key_format"] = "DER"
+            elif key_format == "OpenSSH":
+                params["key_format"] = "OpenSSH"
+            elif key_format == "XML":
+                params["key_format"] = "XML"
 
         # 根据算法获取相应参数
         if algorithm == "RSA_PKCS1v15":
@@ -1217,6 +1286,11 @@ class SignatureView(QWidget):
                 or "密码不正确" in error_msg
             ):
                 QMessageBox.critical(self, "签名失败", "请填充或选择正确私钥文件")
+            # 检查是否是OpenSSH格式曲线支持问题
+            elif "OpenSSH格式不支持" in error_msg and "曲线" in error_msg:
+                QMessageBox.critical(
+                    self, "签名失败", f"{error_msg}\n\n请选择支持的曲线或更改密钥格式。"
+                )
             else:
                 QMessageBox.critical(
                     self, "签名失败", f"生成签名时发生错误: {error_msg}"
@@ -1343,6 +1417,11 @@ class SignatureView(QWidget):
                 or "密钥格式" in error_msg
             ):
                 QMessageBox.critical(self, "验证失败", "请填充或选择正确公钥文件")
+            # 检查是否是OpenSSH格式曲线支持问题
+            elif "OpenSSH格式不支持" in error_msg and "曲线" in error_msg:
+                QMessageBox.critical(
+                    self, "验证失败", f"{error_msg}\n\n请选择支持的曲线或更改密钥格式。"
+                )
             else:
                 QMessageBox.critical(
                     self, "验证失败", f"验证签名时发生错误: {error_msg}"

@@ -12,7 +12,7 @@ PyCryptoKit 是一个基于 Python 开发的密码学图形工具箱，为用户
 - **用户友好的图形界面**：简洁直观的界面设计，无需命令行经验
 - **多种哈希算法**：支持 MD5、SHA系列、SHA3系列、BLAKE系列、SM3 等
 - **对称加密工具**：AES、ChaCha20、Salsa20、SM4 等算法的加密/解密操作
-- **非对称加密工具**：RSA、ECC、ElGamal 等公钥密码系统
+- **非对称加密工具**：RSA、ECC、ElGamal、Edwards 等公钥密码系统
 - **数字签名验证**：支持 RSA 签名、ECDSA 签名、EdDSA 签名等
 - **文件操作支持**：可直接处理文件的加密、解密和哈希计算
 - **结果可视化**：清晰展示加密/解密结果，支持复制和保存
@@ -40,6 +40,7 @@ PyCryptoKit 是一个基于 Python 开发的密码学图形工具箱，为用户
 ### 非对称加密
 - RSA
 - ECC (椭圆曲线加密)
+- Edwards
 - ElGamal
 
 ### 数字签名
@@ -106,6 +107,54 @@ PyCryptoKit/
 └── requirements.txt     # 依赖列表
 ```
 
+## 构建说明
+
+要将 PyCryptoKit 构建为可执行程序，请按照以下步骤操作：
+
+### 准备工作
+
+1. 确保已安装 Python 3.10 或更高版本
+2. 安装 PyInstaller：
+   ```bash
+   pip install pyinstaller
+   ```
+3. 安装项目依赖：
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### 构建步骤
+
+1. 根据您的处理器架构修改 `PyCryptoKit.spec` 文件中的 `target_arch` 参数：
+   - 对于 amd64 处理器：
+     ```python
+     target_arch='x86_64'
+     ```
+   - 对于 Apple Silicon：
+     ```python
+     target_arch='arm64'
+     ```
+   - 对于 x86 处理器：
+     ```python
+     target_arch='x86'
+     ```
+
+2. 执行 PyInstaller 构建命令：
+   ```bash
+   pyinstaller PyCryptoKit.spec
+   ```
+
+3. 构建完成后，可执行程序将位于 `dist` 目录中：
+   - Windows: `dist/PyCryptoKit/PyCryptoKit.exe`
+   - macOS: `dist/PyCryptoKit.app`
+   - Linux: `dist/PyCryptoKit/PyCryptoKit`
+
+### 常见构建问题
+
+- **缺少依赖库**：如果构建过程中报错缺少某些库，请使用 pip 安装对应的库。
+- **UPX 压缩错误**：如果遇到 UPX 相关错误，可以在 `PyCryptoKit.spec` 文件中将 `upx=True` 改为 `upx=False`。
+- **权限问题**：在 Linux/macOS 上，可能需要使用 `sudo` 或确保有足够的文件权限。
+
 ## 常见问题解答
 
 **Q: 如何保证密钥的安全性？**  
@@ -119,6 +168,9 @@ A: 当前版本主要针对单个文件或文本进行处理，未来版本可�
 
 **Q: 使用的密码学库是什么？**  
 A: PyCryptoKit 主要基于Python的密码学库如cryptography、pycryptodome等构建，确保算法实现的安全性和正确性。
+
+**Q: 如何贡献代码？**
+A: 欢迎贡献代码！请在 GitHub 上提交 Pull Request 或 Issue。
 
 ## 使用说明
 

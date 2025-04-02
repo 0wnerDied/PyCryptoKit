@@ -186,7 +186,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='PyCryptoKit.app',
-    icon='gui/views/icon/icon.icns',
+    icon='gui/views/icon/icon_round.icns',
     bundle_identifier=None,
     info_plist={
         'NSHighResolutionCapable': 'True',

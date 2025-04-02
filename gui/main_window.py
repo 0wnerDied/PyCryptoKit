@@ -1,11 +1,83 @@
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QScrollArea, QWidget, QVBoxLayout
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QTabWidget,
+    QScrollArea,
+    QWidget,
+    QVBoxLayout,
+    QDialog,
+    QTextBrowser,
+    QPushButton,
+    QHBoxLayout,
+)
 from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices
 
 from .views.hash_view import HashView
 from .views.symmetric_view import SymmetricView
 from .views.asymmetric_view import AsymmetricView
 from .views.signature_view import SignatureView
+
+
+class AboutDialog(QDialog):
+    """关于对话框，显示详细的项目信息"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("关于 PyCryptoKit")
+        self.setMinimumSize(600, 400)
+
+        layout = QVBoxLayout(self)
+
+        # 创建文本浏览器显示详细信息
+        text_browser = QTextBrowser()
+        text_browser.setOpenExternalLinks(True)
+
+        about_text = """
+        <h2>PyCryptoKit - 密码学图形工具箱</h2>
+        <p>版本: 1.0.0</p>
+        <p>PyCryptoKit 是一个基于 Python 开发的密码学图形工具箱，为用户提供直观的图形界面来执行各种密码学操作。本工具箱集成了常见的加密、解密、哈希计算和数字签名等功能，适用于教学演示、安全研究和日常加密需求。</p>
+        
+        <h3>主要功能:</h3>
+        <ul>
+            <li><b>哈希计算</b>: MD5、SHA系列、SHA3系列、BLAKE系列、SM3 等</li>
+            <li><b>对称加密</b>: AES、ChaCha20、Salsa20、SM4 等算法</li>
+            <li><b>非对称加密</b>: RSA、ECC、ElGamal、Edwards 等公钥密码系统</li>
+            <li><b>数字签名</b>: RSA 签名、ECDSA 签名、EdDSA 签名等</li>
+        </ul>
+        
+        <p>本项目为中国民航大学 2023 级信息安全专业密码学课程设计</p>
+        <p>作者: <a href="https://github.com/0wnerDied">0wnerDied</a></p>
+        
+        <h3>技术栈:</h3>
+        <ul>
+            <li>Python 3.10+</li>
+            <li>PySide6 (Qt for Python)</li>
+            <li>cryptography</li>
+            <li>pycryptodome</li>
+        </ul>
+        
+        <p>本项目采用 MIT 许可证。</p>
+        """
+
+        text_browser.setHtml(about_text)
+        layout.addWidget(text_browser)
+
+        # 添加按钮
+        button_layout = QHBoxLayout()
+        github_button = QPushButton("访问作者 GitHub")
+        github_button.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl("https://github.com/0wnerDied"))
+        )
+
+        close_button = QPushButton("关闭")
+        close_button.clicked.connect(self.accept)
+
+        button_layout.addWidget(github_button)
+        button_layout.addStretch()
+        button_layout.addWidget(close_button)
+
+        layout.addLayout(button_layout)
 
 
 class MainWindow(QMainWindow):
@@ -26,10 +98,11 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
-        help_menu = menubar.addMenu("帮助")
-        about_action = QAction("关于", self)
+        # 添加"关于"菜单
+        about_menu = menubar.addMenu("关于")
+        about_action = QAction("关于 PyCryptoKit", self)
         about_action.triggered.connect(self.show_about)
-        help_menu.addAction(about_action)
+        about_menu.addAction(about_action)
 
         # 创建主容器, 用于应用圆角
         main_container = QWidget()
@@ -160,11 +233,6 @@ class MainWindow(QMainWindow):
         )
 
     def show_about(self):
-        from PySide6.QtWidgets import QMessageBox
-
-        QMessageBox.about(
-            self,
-            "关于 PyCryptoKit",
-            "PyCryptoKit - 加密工具箱\n\n"
-            "一个用于加密、解密、哈希计算和数字签名的工具",
-        )
+        """显示详细的关于对话框"""
+        about_dialog = AboutDialog(self)
+        about_dialog.exec()

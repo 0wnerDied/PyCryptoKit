@@ -131,14 +131,6 @@ class SignatureView(QWidget):
         self.sign_algo_params_layout.addWidget(self.sign_hash_algo_label, 0, 0)
         self.sign_algo_params_layout.addWidget(self.sign_hash_algo_combo, 0, 1)
 
-        # RSA 密钥长度
-        self.sign_rsa_key_size_label = QLabel("密钥长度:")
-        self.sign_rsa_key_size_combo = QComboBox()
-        self.sign_rsa_key_size_combo.addItems(["1024", "2048", "3072", "4096"])
-        self.sign_rsa_key_size_combo.setCurrentText("2048")  # 默认选择2048位
-        self.sign_algo_params_layout.addWidget(self.sign_rsa_key_size_label, 1, 0)
-        self.sign_algo_params_layout.addWidget(self.sign_rsa_key_size_combo, 1, 1)
-
         # ECDSA 曲线选择
         self.sign_ecdsa_curve_label = QLabel("ECDSA曲线:")
         self.sign_ecdsa_curve_combo = QComboBox()
@@ -798,8 +790,6 @@ class SignatureView(QWidget):
         # 隐藏所有参数控件
         self.sign_hash_algo_label.setVisible(False)
         self.sign_hash_algo_combo.setVisible(False)
-        self.sign_rsa_key_size_label.setVisible(False)
-        self.sign_rsa_key_size_combo.setVisible(False)
         self.sign_ecdsa_curve_label.setVisible(False)
         self.sign_ecdsa_curve_combo.setVisible(False)
         self.sign_eddsa_curve_label.setVisible(False)
@@ -809,18 +799,14 @@ class SignatureView(QWidget):
 
         # 根据算法显示相关参数
         if algorithm == "RSA_PKCS1v15":
-            # 显示哈希算法和密钥长度
+            # 显示哈希算法
             self.sign_hash_algo_label.setVisible(True)
             self.sign_hash_algo_combo.setVisible(True)
-            self.sign_rsa_key_size_label.setVisible(True)
-            self.sign_rsa_key_size_combo.setVisible(True)
 
         elif algorithm == "RSA_PSS":
-            # 显示哈希算法、密钥长度和盐长度
+            # 显示哈希算法和盐长度
             self.sign_hash_algo_label.setVisible(True)
             self.sign_hash_algo_combo.setVisible(True)
-            self.sign_rsa_key_size_label.setVisible(True)
-            self.sign_rsa_key_size_combo.setVisible(True)
             self.sign_pss_salt_length_label.setVisible(True)
             self.sign_pss_salt_length.setVisible(True)
 
@@ -1179,11 +1165,9 @@ class SignatureView(QWidget):
         # 根据算法获取相应参数
         if algorithm == "RSA_PKCS1v15":
             params["hash_algorithm"] = self.sign_hash_algo_combo.currentText()
-            params["key_size"] = int(self.sign_rsa_key_size_combo.currentText())
 
         elif algorithm == "RSA_PSS":
             params["hash_algorithm"] = self.sign_hash_algo_combo.currentText()
-            params["key_size"] = int(self.sign_rsa_key_size_combo.currentText())
             params["salt_length"] = self.sign_pss_salt_length.value()
 
         elif algorithm == "ECDSA":

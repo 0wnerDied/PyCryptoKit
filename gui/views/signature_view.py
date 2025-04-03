@@ -126,6 +126,8 @@ class SignatureView(QWidget):
                 "SM3",
             ]
         )
+        # 默认选择 SHA-256
+        self.sign_hash_algo_combo.setCurrentText("SHA256")
         self.sign_algo_params_layout.addWidget(self.sign_hash_algo_label, 0, 0)
         self.sign_algo_params_layout.addWidget(self.sign_hash_algo_combo, 0, 1)
 
@@ -437,7 +439,7 @@ class SignatureView(QWidget):
         algo_layout.addWidget(self.verify_algo_info)
 
         # 算法参数配置区域
-        self.verify_algo_params_group = QGroupBox("算法参数")
+        self.verify_algo_params_group = QGroupBox()
         self.verify_algo_params_layout = QGridLayout()
 
         # 创建参数控件
@@ -461,6 +463,8 @@ class SignatureView(QWidget):
                 "SM3",
             ]
         )
+        # 默认选择 SHA-256
+        self.verify_hash_algo_combo.setCurrentText("SHA256")
         self.verify_algo_params_layout.addWidget(self.verify_hash_algo_label, 0, 0)
         self.verify_algo_params_layout.addWidget(self.verify_hash_algo_combo, 0, 1)
 

@@ -13,10 +13,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 
-from .views.hash_view import HashView
-from .views.symmetric_view import SymmetricView
-from .views.asymmetric_view import AsymmetricView
-from .views.signature_view import SignatureView
+from .views import HashView, SymmetricView, AsymmetricView, SignatureView
 
 
 class AboutDialog(QDialog):

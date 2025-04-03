@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 import os
 
-from core.asymmetric import AsymmetricCipherFactory
+from core import AsymmetricCipherFactory
 
 
 class AsymmetricView(QWidget):

@@ -131,9 +131,9 @@ __all__ = [
     "create_signature",
     "sign_data",
     "verify_signature",
-    "list_algorithms",
-    "get_algorithm_info",
-    "ALL_ALGORITHMS",
+    "list_signature_algorithms",
+    "get_signature_algorithm_info",
+    "ALL_SIGNATURE_ALGORITHMS",
     # 对称加密
     "SymmetricAlgorithm",
     "Mode",

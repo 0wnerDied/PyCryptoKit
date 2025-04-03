@@ -24,11 +24,11 @@ import base64
 import binascii
 from typing import Optional, Dict, Any
 
-from core.signature import (
+from core import (
     sign_data,
     verify_signature,
-    list_algorithms as list_signature_algorithms,
-    get_algorithm_info as get_signature_algorithm_info,
+    list_signature_algorithms,
+    get_signature_algorithm_info,
 )
 
 

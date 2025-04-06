@@ -16,6 +16,7 @@ from .asymmetric import (
     RSA,
     ECC,
     ElGamal,
+    SM2,
 )
 
 # 导出哈希模块的内容
@@ -94,6 +95,7 @@ __all__ = [
     "RSA",
     "ECC",
     "ElGamal",
+    "SM2",
     # 哈希算法
     "HashBase",
     "MD5Hash",

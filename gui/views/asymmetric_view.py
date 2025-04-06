@@ -58,6 +58,9 @@ class AsymmetricView(QWidget):
         # OpenSSH格式不支持的算法列表
         self.openssh_unsupported_algorithms = ["ElGamal"]
 
+        # Hex格式支持的算法列表
+        self.hex_supported_algorithms = ["SM2"]
+
         self.current_key_pair = None
 
         # 初始化UI组件为None, 以便在setup_ui中创建
@@ -157,8 +160,8 @@ class AsymmetricView(QWidget):
         confirm_layout.addWidget(self.confirm_password)
         password_layout.addLayout(confirm_layout)
 
-        # XML格式密码限制提示
-        self.password_warning = QLabel("XML格式不支持密码加密")
+        # XML/HEX格式密码限制提示
+        self.password_warning = QLabel("XML/HEX格式不支持密码加密")
         self.password_warning.setStyleSheet("color: yellow;")
         self.password_warning.setVisible(False)
         password_layout.addWidget(self.password_warning)
@@ -171,7 +174,7 @@ class AsymmetricView(QWidget):
         format_layout = QHBoxLayout()
         format_layout.addWidget(QLabel("选择格式:"))
         self.key_format_combo = QComboBox()
-        self.key_format_combo.addItems(["PEM", "DER", "OpenSSH", "XML"])
+        self.key_format_combo.addItems(["PEM", "DER", "OpenSSH", "XML", "HEX"])
         self.key_format_combo.currentIndexChanged.connect(self.on_format_changed)
         format_layout.addWidget(self.key_format_combo)
         format_group.setLayout(format_layout)
@@ -263,6 +266,8 @@ class AsymmetricView(QWidget):
                     info_text = "ElGamal是一种基于离散对数问题的非对称加密算法。\n支持密钥大小: 1024, 2048, 3072, 4096位"
                 elif algorithm == "Edwards":
                     info_text = "Edwards是一种特殊形式的椭圆曲线, 提供高效的数字签名功能。\n支持Ed25519和Ed448曲线, 广泛用于现代密码协议。"
+                elif algorithm == "SM2":
+                    info_text = "SM2是中国国家密码管理局制定的椭圆曲线密码算法标准。\n支持SM2曲线, 用于数字签名和加密。"
                 else:
                     info_text = f"{algorithm}是一种非对称加密算法。"
 
@@ -387,6 +392,9 @@ class AsymmetricView(QWidget):
             # 如果之前选择的是OpenSSH, 则默认选择PEM
             if current_format == "OpenSSH":
                 self.key_format_combo.setCurrentText("PEM")
+        # SM2算法支持Hex格式但不支持OpenSSH
+        elif current_algorithm in self.hex_supported_algorithms:
+            self.key_format_combo.addItems(["PEM", "DER", "XML", "HEX"])
         else:
             # 其他算法添加所有格式
             self.key_format_combo.addItems(["PEM", "DER", "OpenSSH", "XML"])
@@ -412,7 +420,7 @@ class AsymmetricView(QWidget):
 
         key_format = self.key_format_combo.currentText().lower()
 
-        if key_format == "xml":
+        if key_format in ["xml", "hex"]:
             # XML格式不支持密码，禁用密码输入框
             self.key_password.setEnabled(False)
             self.confirm_password.setEnabled(False)
@@ -504,7 +512,7 @@ class AsymmetricView(QWidget):
             key_format = self.key_format_combo.currentText().lower()
 
             # XML格式不使用密码
-            if key_format == "xml":
+            if key_format in ["xml", "hex"]:
                 password = ""
                 confirm_password = ""
 
@@ -586,6 +594,17 @@ class AsymmetricView(QWidget):
                 self.copy_public_btn.setEnabled(True)
                 self.copy_private_btn.setEnabled(True)
 
+            elif key_format == "hex":
+                public_key_str = key_pair.public_key.to_hex()
+                private_key_str = key_pair.private_key.to_hex()
+
+                self.public_key_display.setText(public_key_str)
+                self.private_key_display.setText(private_key_str)
+
+                # 启用复制按钮
+                self.copy_public_btn.setEnabled(True)
+                self.copy_private_btn.setEnabled(True)
+
             else:
                 public_key_str = "未知格式"
                 private_key_str = "未知格式"
@@ -619,7 +638,7 @@ class AsymmetricView(QWidget):
         key_format = self.key_format_combo.currentText().lower()
 
         # XML格式不使用密码
-        if key_format == "xml":
+        if key_format in ["xml", "hex"]:
             password = ""
 
         if password and password != confirm_password:
@@ -637,6 +656,8 @@ class AsymmetricView(QWidget):
             ext = "key"
         elif key_format == "xml":
             ext = "xml"
+        elif key_format == "hex":
+            ext = "hex"
         else:
             ext = "key"
 
@@ -671,6 +692,8 @@ class AsymmetricView(QWidget):
             ext = "pub"
         elif key_format == "xml":
             ext = "xml"
+        elif key_format == "hex":
+            ext = "hex"
         else:
             ext = "pub"
 
@@ -697,7 +720,7 @@ class AsymmetricView(QWidget):
         key_format = self.key_format_combo.currentText().lower()
 
         # XML格式不使用密码
-        if key_format == "xml":
+        if key_format in ["xml", "hex"]:
             password = ""
 
         if password and password != confirm_password:
@@ -719,6 +742,9 @@ class AsymmetricView(QWidget):
         elif key_format == "xml":
             ext_priv = "xml"
             ext_pub = "xml"
+        elif key_format == "hex":
+            ext_priv = "hex"
+            ext_pub = "hex"
         else:
             ext_priv = "key"
             ext_pub = "pub"

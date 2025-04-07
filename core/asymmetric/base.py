@@ -44,11 +44,6 @@ class AsymmetricKey:
         pass
 
     @abc.abstractmethod
-    def to_hex(self) -> str:
-        """将密钥转换为hex格式"""
-        pass
-
-    @abc.abstractmethod
     def save_to_file(
         self, filepath: str, format: str = "pem", password: Optional[bytes] = None
     ) -> None:

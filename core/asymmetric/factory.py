@@ -1,4 +1,4 @@
-from typing import Dict, Type, Optional, Union, BinaryIO, List
+from typing import Dict, Type, Optional, List
 from .base import AsymmetricCipher, AsymmetricKey, KeyPair
 
 _ALGORITHMS: Dict[str, Type[AsymmetricCipher]] = {}
@@ -81,48 +81,6 @@ class AsymmetricCipherFactory:
         """
         cipher = AsymmetricCipherFactory.get_algorithm(algorithm)
         return cipher.generate_key_pair(**kwargs)
-
-    @staticmethod
-    def load_public_key(
-        key_data: Union[bytes, str, BinaryIO],
-        algorithm: Optional[str] = None,
-        format: str = "pem",
-    ) -> AsymmetricKey:
-        """
-        加载公钥
-
-        Args:
-            key_data: 密钥数据
-            algorithm: 算法名称
-            format: 格式('pem', 'der', 'openssh', 'xml')
-
-        Returns:
-            公钥对象
-        """
-        cipher = AsymmetricCipherFactory.get_algorithm(algorithm)
-        return cipher.load_public_key(key_data, format)
-
-    @staticmethod
-    def load_private_key(
-        key_data: Union[bytes, str, BinaryIO],
-        algorithm: Optional[str] = None,
-        format: str = "pem",
-        password: Optional[bytes] = None,
-    ) -> AsymmetricKey:
-        """
-        加载私钥
-
-        Args:
-            key_data: 密钥数据
-            algorithm: 算法名称
-            format: 格式('pem', 'der', 'openssh', 'xml')
-            password: 密码(如果有)
-
-        Returns:
-            私钥对象
-        """
-        cipher = AsymmetricCipherFactory.get_algorithm(algorithm)
-        return cipher.load_private_key(key_data, format, password)
 
     @staticmethod
     def save_key_to_file(

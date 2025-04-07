@@ -4,7 +4,7 @@
 """
 
 import abc
-from typing import Optional, Union, BinaryIO
+from typing import Optional
 
 
 class AsymmetricKey:
@@ -125,42 +125,5 @@ class AsymmetricCipher(abc.ABC):
 
         Returns:
             支持的密钥大小列表
-        """
-        pass
-
-    @staticmethod
-    @abc.abstractmethod
-    def load_public_key(
-        key_data: Union[bytes, str, BinaryIO], format: str = "pem"
-    ) -> AsymmetricKey:
-        """
-        加载公钥
-
-        Args:
-            key_data: 密钥数据
-            format: 格式 ('pem', 'der', 'openssh', 'xml')
-
-        Returns:
-            公钥对象
-        """
-        pass
-
-    @staticmethod
-    @abc.abstractmethod
-    def load_private_key(
-        key_data: Union[bytes, str, BinaryIO],
-        format: str = "pem",
-        password: Optional[bytes] = None,
-    ) -> AsymmetricKey:
-        """
-        加载私钥
-
-        Args:
-            key_data: 密钥数据
-            format: 格式 ('pem', 'der', 'openssh', 'xml')
-            password: 密码 (如果有)
-
-        Returns:
-            私钥对象
         """
         pass

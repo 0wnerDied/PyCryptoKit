@@ -50,24 +50,6 @@ AsymmetricCipherFactory.save_key_pair_to_files(
 )
 ```
 
-### 加载密钥
-
-从文件或数据中加载密钥：
-
-```python
-# 加载公钥
-with open("public_key.pem", "rb") as f:
-    public_key = AsymmetricCipherFactory.load_public_key(
-        f, algorithm="RSA", format="pem"
-    )
-
-# 加载私钥
-with open("private_key.pem", "rb") as f:
-    private_key = AsymmetricCipherFactory.load_private_key(
-        f, algorithm="RSA", format="pem", password=b"your_password"
-    )
-```
-
 ## 支持的算法
 
 ### RSA
@@ -240,12 +222,6 @@ key_pair.save_to_files(
     public_key_path="public_key.pem",
     password=b"your_secure_password"
 )
-
-# 加载加密的私钥
-with open("private_key.pem", "rb") as f:
-    private_key = AsymmetricCipherFactory.load_private_key(
-        f, algorithm="RSA", password=b"your_secure_password"
-    )
 ```
 
 ### 查询支持的算法和密钥大小

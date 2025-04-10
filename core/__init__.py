@@ -74,6 +74,9 @@ from .symmetric import (
     decrypt_from_base64,
 )
 
+# 助手模块
+from .utils import timing_decorator
+
 # 解决命名冲突
 from .hash import list_algorithms as list_hash_algorithms
 from .hash import get_algorithm_info as get_hash_algorithm_info
@@ -142,4 +145,6 @@ __all__ = [
     "decrypt",
     "encrypt_to_base64",
     "decrypt_from_base64",
+    # 助手模块
+    "timing_decorator",
 ]

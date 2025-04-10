@@ -27,6 +27,7 @@ from core import (
     SymmetricAlgorithm,
     Mode,
     Padding,
+    timing_decorator,
 )
 
 
@@ -333,6 +334,12 @@ class SymmetricView(QWidget):
         )
 
         result_layout.addLayout(format_layout)
+
+        # 执行时间标签
+        self.execution_time_label = QLabel("")
+        self.execution_time_label.setStyleSheet("color: green;")
+        result_layout.addWidget(self.execution_time_label)
+
         result_group.setLayout(result_layout)
         layout.addWidget(result_group)
 
@@ -605,6 +612,12 @@ class SymmetricView(QWidget):
         self.decrypt_result = QTextEdit()
         self.decrypt_result.setReadOnly(True)
         result_layout.addWidget(self.decrypt_result)
+
+        # 执行时间标签
+        self.decrypt_execution_time_label = QLabel("")
+        self.decrypt_execution_time_label.setStyleSheet("color: green;")
+        result_layout.addWidget(self.decrypt_execution_time_label)
+
         result_group.setLayout(result_layout)
         layout.addWidget(result_group)
 
@@ -1067,6 +1080,7 @@ class SymmetricView(QWidget):
             # 默认当作 Hex 处理
             return bytes.fromhex(iv_text)
 
+    @timing_decorator
     def perform_encryption(self):
         """执行加密操作"""
         try:
@@ -1139,6 +1153,7 @@ class SymmetricView(QWidget):
 
             traceback.print_exc()
 
+    @timing_decorator
     def perform_decryption(self):
         """执行解密操作"""
         try:
@@ -1256,6 +1271,7 @@ class SymmetricView(QWidget):
         self.file_path.clear()
         self.output_file_path.clear()
         self.file_info.clear()
+        self.execution_time_label.clear()
         self.last_result = b""
 
     def clear_decrypt_fields(self):
@@ -1268,4 +1284,5 @@ class SymmetricView(QWidget):
         self.decrypt_file_path.clear()
         self.decrypt_output_file_path.clear()
         self.decrypt_file_info.clear()
+        self.decrypt_execution_time_label.clear()
         self.last_decrypt_result = ""
